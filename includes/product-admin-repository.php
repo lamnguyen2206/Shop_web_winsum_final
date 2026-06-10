@@ -34,7 +34,6 @@ function productAdminList(mysqli $conn, int $limit = 200, string $search = ''): 
                     SELECT ii.product_id, ii.quantity_on_hand
                     FROM inventory_items ii
                     INNER JOIN warehouses w ON w.id = ii.warehouse_id AND w.is_default = 1
-                    WHERE ii.variant_id IS NULL
                 ) inv ON inv.product_id = p.id
                 LEFT JOIN (
                     SELECT oi.product_id, SUM(oi.quantity) AS units_sold
@@ -185,10 +184,10 @@ function productAdminSave(mysqli $conn, array $data): array
             $message = 'Đã cập nhật sản phẩm.';
         } else {
             $stmt = $conn->prepare("INSERT INTO products
-                (brand_id, category_id, name, slug, short_description, description, sku, product_type,
+                (brand_id, category_id, name, slug, short_description, description, sku,
                  base_price, compare_at_price, stock_status, material, color, warranty_months,
                  is_featured, is_active, published_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'simple', ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
             if (!$stmt) {
                 throw new RuntimeException('Không tạo được sản phẩm.');
             }

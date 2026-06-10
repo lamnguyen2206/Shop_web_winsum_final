@@ -243,7 +243,7 @@ BANNER (<u>id</u>, title, subtitle, image_url, link_url, position, sort_order, i
 </table>
 
 <h4>Bảng 4: SANPHAM (products)</h4>
-<p>Thông tin sản phẩm bán trên website. Phiên bản đồ án chỉ bán sản phẩm đơn (<code>product_type = 'simple'</code>), chưa dùng biến thể (variant).</p>
+<p>Thông tin sản phẩm bán trên website. Mỗi sản phẩm có một SKU, một giá; màu sắc và chất liệu lưu trực tiếp trên bảng.</p>
 <table>
 <tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
 <tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID sản phẩm</td></tr>
@@ -254,18 +254,17 @@ BANNER (<u>id</u>, title, subtitle, image_url, link_url, position, sort_order, i
 <tr><td>6</td><td>short_description</td><td>TEXT</td><td>NULL</td><td>Mô tả ngắn</td></tr>
 <tr><td>7</td><td>description</td><td>LONGTEXT</td><td>NULL</td><td>Mô tả chi tiết</td></tr>
 <tr><td>8</td><td>sku</td><td>VARCHAR(60)</td><td>NOT NULL, UNIQUE</td><td>Mã SKU</td></tr>
-<tr><td>9</td><td>product_type</td><td>ENUM</td><td>DEFAULT 'simple'</td><td>simple / variant</td></tr>
-<tr><td>10</td><td>base_price</td><td>DECIMAL(12,2)</td><td>NOT NULL</td><td>Giá bán (VND)</td></tr>
-<tr><td>11</td><td>compare_at_price</td><td>DECIMAL(12,2)</td><td>NULL</td><td>Giá gạch</td></tr>
-<tr><td>12</td><td>stock_status</td><td>ENUM</td><td>DEFAULT 'in_stock'</td><td>in_stock / out_of_stock / preorder</td></tr>
-<tr><td>13</td><td>material</td><td>VARCHAR(120)</td><td>NULL</td><td>Chất liệu</td></tr>
-<tr><td>14</td><td>color</td><td>VARCHAR(120)</td><td>NULL</td><td>Màu sắc</td></tr>
-<tr><td>15</td><td>warranty_months</td><td>INT</td><td>NULL</td><td>Bảo hành (tháng)</td></tr>
-<tr><td>16</td><td>rating_average</td><td>DECIMAL(3,2)</td><td>DEFAULT 0</td><td>Điểm TB (cập nhật từ reviews)</td></tr>
-<tr><td>17</td><td>rating_count</td><td>INT</td><td>DEFAULT 0</td><td>Số lượt đánh giá</td></tr>
-<tr><td>18</td><td>is_featured</td><td>TINYINT(1)</td><td>DEFAULT 0</td><td>Sản phẩm nổi bật trang chủ</td></tr>
-<tr><td>19</td><td>is_active</td><td>TINYINT(1)</td><td>DEFAULT 1</td><td>Hiển thị trên web</td></tr>
-<tr><td>20</td><td>published_at</td><td>DATETIME</td><td>NULL</td><td>Ngày xuất bản</td></tr>
+<tr><td>9</td><td>base_price</td><td>DECIMAL(12,2)</td><td>NOT NULL</td><td>Giá bán (VND)</td></tr>
+<tr><td>10</td><td>compare_at_price</td><td>DECIMAL(12,2)</td><td>NULL</td><td>Giá gạch</td></tr>
+<tr><td>11</td><td>stock_status</td><td>ENUM</td><td>DEFAULT 'in_stock'</td><td>in_stock / out_of_stock / preorder</td></tr>
+<tr><td>12</td><td>material</td><td>VARCHAR(120)</td><td>NULL</td><td>Chất liệu</td></tr>
+<tr><td>13</td><td>color</td><td>VARCHAR(120)</td><td>NULL</td><td>Màu sắc</td></tr>
+<tr><td>14</td><td>warranty_months</td><td>INT</td><td>NULL</td><td>Bảo hành (tháng)</td></tr>
+<tr><td>15</td><td>rating_average</td><td>DECIMAL(3,2)</td><td>DEFAULT 0</td><td>Điểm TB (cập nhật từ reviews)</td></tr>
+<tr><td>16</td><td>rating_count</td><td>INT</td><td>DEFAULT 0</td><td>Số lượt đánh giá</td></tr>
+<tr><td>17</td><td>is_featured</td><td>TINYINT(1)</td><td>DEFAULT 0</td><td>Sản phẩm nổi bật trang chủ</td></tr>
+<tr><td>18</td><td>is_active</td><td>TINYINT(1)</td><td>DEFAULT 1</td><td>Hiển thị trên web</td></tr>
+<tr><td>19</td><td>published_at</td><td>DATETIME</td><td>NULL</td><td>Ngày xuất bản</td></tr>
 </table>
 
 <h4>Bảng 5: ANHSP (product_images)</h4>
@@ -274,11 +273,10 @@ BANNER (<u>id</u>, title, subtitle, image_url, link_url, position, sort_order, i
 <tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
 <tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID ảnh</td></tr>
 <tr><td>2</td><td>product_id</td><td>BIGINT</td><td>FK → products.id</td><td>Sản phẩm</td></tr>
-<tr><td>3</td><td>variant_id</td><td>BIGINT</td><td>NULL</td><td>Dự phòng biến thể (chưa dùng)</td></tr>
-<tr><td>4</td><td>image_url</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Đường dẫn ảnh</td></tr>
-<tr><td>5</td><td>alt_text</td><td>VARCHAR(255)</td><td>NULL</td><td>Mô tả ảnh (SEO)</td></tr>
-<tr><td>6</td><td>sort_order</td><td>INT</td><td>DEFAULT 0</td><td>Thứ tự</td></tr>
-<tr><td>7</td><td>is_primary</td><td>TINYINT(1)</td><td>DEFAULT 0</td><td>Ảnh đại diện</td></tr>
+<tr><td>3</td><td>image_url</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Đường dẫn ảnh</td></tr>
+<tr><td>4</td><td>alt_text</td><td>VARCHAR(255)</td><td>NULL</td><td>Mô tả ảnh (SEO)</td></tr>
+<tr><td>5</td><td>sort_order</td><td>INT</td><td>DEFAULT 0</td><td>Thứ tự</td></tr>
+<tr><td>6</td><td>is_primary</td><td>TINYINT(1)</td><td>DEFAULT 0</td><td>Ảnh đại diện</td></tr>
 </table>
 
 <h3>C. Nhóm tồn kho</h3>
@@ -299,11 +297,10 @@ BANNER (<u>id</u>, title, subtitle, image_url, link_url, position, sort_order, i
 <tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
 <tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID bản ghi</td></tr>
 <tr><td>2</td><td>product_id</td><td>BIGINT</td><td>FK → products.id</td><td>Sản phẩm</td></tr>
-<tr><td>3</td><td>variant_id</td><td>BIGINT</td><td>NULL</td><td>Luôn NULL (chưa dùng variant)</td></tr>
-<tr><td>4</td><td>warehouse_id</td><td>BIGINT</td><td>FK → warehouses.id</td><td>Kho</td></tr>
-<tr><td>5</td><td>quantity_on_hand</td><td>INT</td><td>DEFAULT 0</td><td>Số lượng tồn</td></tr>
-<tr><td>6</td><td>quantity_reserved</td><td>INT</td><td>DEFAULT 0</td><td>Số lượng giữ chỗ</td></tr>
-<tr><td>7</td><td>reorder_level</td><td>INT</td><td>DEFAULT 0</td><td>Ngưỡng cảnh báo nhập thêm</td></tr>
+<tr><td>3</td><td>warehouse_id</td><td>BIGINT</td><td>FK → warehouses.id</td><td>Kho</td></tr>
+<tr><td>4</td><td>quantity_on_hand</td><td>INT</td><td>DEFAULT 0</td><td>Số lượng tồn</td></tr>
+<tr><td>5</td><td>quantity_reserved</td><td>INT</td><td>DEFAULT 0</td><td>Số lượng giữ chỗ</td></tr>
+<tr><td>6</td><td>reorder_level</td><td>INT</td><td>DEFAULT 0</td><td>Ngưỡng cảnh báo nhập thêm</td></tr>
 </table>
 
 <h4>Bảng 8: CANHBAOTON (inventory_alerts)</h4>
@@ -597,7 +594,6 @@ BANNER (<u>id</u>, title, subtitle, image_url, link_url, position, sort_order, i
 <table>
 <tr><th>Bảng</th><th>Mục đích thiết kế</th><th>Lý do chưa dùng</th></tr>
 <tr><td>customer_addresses</td><td>Nhiều địa chỉ/khách</td><td>Địa chỉ nhập trực tiếp khi đặt hàng</td></tr>
-<tr><td>product_variants</td><td>Biến thể SP (màu, size)</td><td>Chỉ bán SP đơn (simple)</td></tr>
 <tr><td>product_attribute_definitions<br>product_attribute_values</td><td>Thuộc tính động SP</td><td>Thuộc tính lưu trực tiếp trên products</td></tr>
 <tr><td>blog_tags, blog_post_tags</td><td>Tag blog N–N</td><td>Chưa triển khai tag</td></tr>
 <tr><td>carts, cart_items</td><td>Giỏ hàng DB</td><td>Dùng PHP Session</td></tr>

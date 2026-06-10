@@ -47,7 +47,7 @@ TABLES = [
     },
     {
         "title": "Bảng 4: products — Sản phẩm",
-        "purpose": "Thông tin sản phẩm bán trên website (product_type = simple).",
+        "purpose": "Thông tin sản phẩm bán trên website.",
         "fields": [
             ("id", "BIGINT", "PK, AI", "Mã sản phẩm"),
             ("category_id", "BIGINT", "FK, NOT NULL", "Danh mục sản phẩm"),
@@ -386,8 +386,7 @@ def build_document() -> Document:
 
     intro = doc.add_paragraph(
         "Tài liệu mô tả các trường bắt buộc và cốt lõi của từng bảng trong hệ thống. "
-        "Các trường tùy chọn (NULL), trường tự sinh (created_at, updated_at) và cột dự phòng "
-        "(variant_id) không liệt kê để tránh dài dòng."
+        "Các trường tùy chọn (NULL), trường tự sinh (created_at, updated_at) không liệt kê để tránh dài dòng."
     )
     intro.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 

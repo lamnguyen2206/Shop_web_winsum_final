@@ -155,20 +155,15 @@ erDiagram
 <!-- ═══════════════ NHÓM 2 ═══════════════ -->
 <div class="diagram-section page-break" id="g2">
   <h2>Nhóm 2 — Danh mục & Sản phẩm</h2>
-  <p class="desc">Sản phẩm thuộc danh mục và thương hiệu; có biến thể, ảnh, thuộc tính mở rộng và đánh giá.</p>
+  <p class="desc">Sản phẩm thuộc danh mục và thương hiệu; có ảnh và đánh giá.</p>
   <pre class="mermaid">
 erDiagram
     DANHMUC ||--o{ SANPHAM : "chứa"
     DANHMUC ||--o{ DANHMUC : "DM cha-con"
     THUONGHIEU ||--o{ SANPHAM : "sở hữu"
-    SANPHAM ||--o{ BIENTHE : "có"
     SANPHAM ||--o{ ANHSP : "có"
-    BIENTHE ||--o{ ANHSP : "riêng"
     SANPHAM ||--o{ DANHGIA : "nhận"
     KHACHHANG ||--o{ DANHGIA : "viết"
-    SANPHAM ||--o{ GIATRITHUOCTINH : "có"
-    BIENTHE ||--o{ GIATRITHUOCTINH : "có"
-    DINHNGHIATHUOCTINH ||--o{ GIATRITHUOCTINH : "xác định"
 
     DANHMUC {
         bigint id PK
@@ -194,7 +189,6 @@ erDiagram
         varchar name
         varchar slug UK
         varchar sku UK
-        enum product_type
         decimal base_price
         enum stock_status
         varchar material
@@ -205,23 +199,9 @@ erDiagram
         tinyint is_active
     }
 
-    BIENTHE {
-        bigint id PK
-        bigint product_id FK
-        varchar variant_name
-        varchar variant_sku UK
-        varchar option_color
-        varchar option_size
-        varchar option_material
-        decimal price
-        tinyint is_default
-        tinyint is_active
-    }
-
     ANHSP {
         bigint id PK
         bigint product_id FK
-        bigint variant_id FK
         varchar image_url
         varchar alt_text
         int sort_order
@@ -238,34 +218,17 @@ erDiagram
         text content
         enum status
     }
-
-    DINHNGHIATHUOCTINH {
-        bigint id PK
-        varchar code UK
-        varchar label
-        enum data_type
-    }
-
-    GIATRITHUOCTINH {
-        bigint id PK
-        bigint product_id FK
-        bigint variant_id FK
-        bigint attribute_id FK
-        text value_text
-        decimal value_number
-    }
   </pre>
-  <p class="legend">1 Danh mục → N Sản phẩm &nbsp;|&nbsp; 1 Sản phẩm → N Biến thể, N Ảnh, N Đánh giá &nbsp;|&nbsp; Thuộc tính mở rộng EAV</p>
+  <p class="legend">1 Danh mục → N Sản phẩm &nbsp;|&nbsp; 1 Sản phẩm → N Ảnh, N Đánh giá</p>
 </div>
 
 <!-- ═══════════════ NHÓM 3 ═══════════════ -->
 <div class="diagram-section page-break" id="g3">
   <h2>Nhóm 3 — Tồn kho & Kho hàng</h2>
-  <p class="desc">Quản lý số lượng tồn kho theo sản phẩm/biến thể tại từng kho, cảnh báo hết hàng.</p>
+  <p class="desc">Quản lý số lượng tồn kho theo sản phẩm tại từng kho, cảnh báo hết hàng.</p>
   <pre class="mermaid">
 erDiagram
     SANPHAM ||--o{ TONKHO : "được theo dõi"
-    BIENTHE ||--o{ TONKHO : "theo biến thể"
     KHO ||--o{ TONKHO : "lưu trữ tại"
     SANPHAM ||--o{ CANHBAOTON : "phát sinh"
     DONHANG ||--o{ CANHBAOTON : "từ đơn"
@@ -281,7 +244,6 @@ erDiagram
     TONKHO {
         bigint id PK
         bigint product_id FK
-        bigint variant_id FK
         bigint warehouse_id FK
         int quantity_on_hand
         int quantity_reserved
@@ -298,7 +260,7 @@ erDiagram
         timestamp created_at
     }
   </pre>
-  <p class="legend">1 Sản phẩm + 1 Kho → 1 bản ghi Tồn kho (UNIQUE: product_id, variant_id, warehouse_id)</p>
+  <p class="legend">1 Sản phẩm + 1 Kho → 1 bản ghi Tồn kho (UNIQUE: product_id, warehouse_id)</p>
 </div>
 
 <!-- ═══════════════ NHÓM 4 ═══════════════ -->
@@ -310,7 +272,6 @@ erDiagram
     KHACHHANG ||--o{ GIOHANG : "sở hữu"
     GIOHANG ||--o{ CHITIETGIO : "chứa"
     SANPHAM ||--o{ CHITIETGIO : "được thêm"
-    BIENTHE ||--o{ CHITIETGIO : "theo biến thể"
     MAGIAMGIA ||--o{ GIOHANG : "áp dụng"
     MAGIAMGIA ||--o{ SUDUNGMGG : "được sử dụng"
     KHACHHANG ||--o{ SUDUNGMGG : "sử dụng"
@@ -328,7 +289,6 @@ erDiagram
         bigint id PK
         bigint cart_id FK
         bigint product_id FK
-        bigint variant_id FK
         varchar product_sku
         varchar product_name
         decimal unit_price
@@ -372,7 +332,6 @@ erDiagram
     MAGIAMGIA ||--o{ DONHANG : "giảm giá"
     DONHANG ||--o{ CHITIETDON : "gồm"
     SANPHAM ||--o{ CHITIETDON : "được mua"
-    BIENTHE ||--o{ CHITIETDON : "biến thể"
     DONHANG ||--o{ THANHTOAN : "thanh toán"
     PTTHANHTOAN ||--o{ THANHTOAN : "theo PT"
     DONHANG ||--o{ VANCHUYEN : "giao hàng"
@@ -403,7 +362,6 @@ erDiagram
         bigint id PK
         bigint order_id FK
         bigint product_id FK
-        bigint variant_id FK
         varchar product_sku
         varchar product_name
         varchar product_image
@@ -547,7 +505,6 @@ erDiagram
     DANHMUC ||--o{ SANPHAM : ""
     THUONGHIEU ||--o{ SANPHAM : ""
 
-    SANPHAM ||--o{ BIENTHE : ""
     SANPHAM ||--o{ ANHSP : ""
     SANPHAM ||--o{ TONKHO : ""
     SANPHAM ||--o{ DANHGIA : ""
@@ -555,12 +512,6 @@ erDiagram
     SANPHAM ||--o{ CHITIETGIO : ""
     SANPHAM ||--o{ CHITIETDON : ""
     SANPHAM ||--o{ CANHBAOTON : ""
-    SANPHAM ||--o{ GIATRITHUOCTINH : ""
-
-    BIENTHE ||--o{ TONKHO : ""
-    BIENTHE ||--o{ CHITIETGIO : ""
-    BIENTHE ||--o{ CHITIETDON : ""
-    BIENTHE ||--o{ ANHSP : ""
 
     KHO ||--o{ TONKHO : ""
 
@@ -581,8 +532,6 @@ erDiagram
     DMBLOG ||--o{ BAIVIET : ""
     BAIVIET ||--o{ BAIVIET_THE : ""
     THEBLOG ||--o{ BAIVIET_THE : ""
-
-    DINHNGHIATHUOCTINH ||--o{ GIATRITHUOCTINH : ""
 
     KHACHHANG {
         bigint id PK
@@ -611,12 +560,6 @@ erDiagram
     THUONGHIEU {
         bigint id PK
         varchar name
-    }
-    BIENTHE {
-        bigint id PK
-        bigint product_id FK
-        varchar variant_sku
-        decimal price
     }
     KHO {
         bigint id PK
@@ -664,8 +607,6 @@ erDiagram
     LICHSUDON { bigint id PK }
     SUDUNGMGG { bigint id PK }
     BAIVIET_THE { bigint post_id PK }
-    GIATRITHUOCTINH { bigint id PK }
-    DINHNGHIATHUOCTINH { bigint id PK }
     BANNER { bigint id PK }
     CAUHINH { bigint id PK }
   </pre>
@@ -694,7 +635,7 @@ erDiagram
     <tr style="background:#f9f9f9;">
       <td style="padding:8px; border:1px solid #ddd; text-align:center; font-weight:bold;">2</td>
       <td style="padding:8px; border:1px solid #ddd;">Danh mục & Sản phẩm</td>
-      <td style="padding:8px; border:1px solid #ddd;">categories, brands, products, product_variants, product_images, product_reviews, product_attribute_definitions, product_attribute_values</td>
+      <td style="padding:8px; border:1px solid #ddd;">categories, brands, products, product_images, product_reviews</td>
       <td style="padding:8px; border:1px solid #ddd;">products.id → inventory, cart_items, order_items, wishlist_items</td>
     </tr>
     <tr>
