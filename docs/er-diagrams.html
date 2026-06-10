@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Biểu đồ ER – Winsum Home</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  @page { size: A4 landscape; margin: 12mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    margin: 0;
+    padding: 20px 30px;
+    background: #fafafa;
+    color: #1a1a1a;
+  }
+  h1 {
+    text-align: center;
+    font-size: 22px;
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 30px;
+  }
+  .diagram-section {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 28px;
+    page-break-inside: avoid;
+  }
+  .diagram-section h2 {
+    font-size: 17px;
+    color: #1e3a5f;
+    border-bottom: 2px solid #1e3a5f;
+    padding-bottom: 6px;
+    margin-top: 0;
+    margin-bottom: 6px;
+  }
+  .diagram-section .desc {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .mermaid {
+    display: flex;
+    justify-content: center;
+  }
+  .mermaid svg {
+    max-width: 100%;
+    height: auto;
+  }
+  .legend {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #777;
+    text-align: center;
+  }
+  .toc {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px 24px;
+    margin-bottom: 28px;
+  }
+  .toc h3 { margin-top: 0; font-size: 15px; }
+  .toc ol { margin: 0; padding-left: 20px; }
+  .toc li { margin-bottom: 4px; font-size: 14px; }
+  .toc a { color: #1e3a5f; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .page-break { page-break-before: always; }
+  .diagram-section { page-break-after: always; }
+  .diagram-section:last-of-type { page-break-after: auto; }
+  @media print {
+    body { padding: 0; background: #fff; }
+    .diagram-section { border: none; box-shadow: none; page-break-inside: avoid; page-break-after: always; }
+    .diagram-section:last-of-type { page-break-after: auto; }
+    .no-print { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>BIỂU ĐỒ THỰC THỂ – MỐI QUAN HỆ (ER DIAGRAM)</h1>
+<p class="subtitle">Đồ án Website bán hàng Winsum Home — Thiết bị chiếu sáng & nội thất</p>
+
+<div class="toc no-print">
+  <h3>Danh sách biểu đồ</h3>
+  <ol>
+    <li><a href="#g1">Nhóm 1 — Khách hàng & Tài khoản</a></li>
+    <li><a href="#g2">Nhóm 2 — Danh mục & Sản phẩm</a></li>
+    <li><a href="#g3">Nhóm 3 — Tồn kho & Kho hàng</a></li>
+    <li><a href="#g4">Nhóm 4 — Giỏ hàng & Khuyến mãi</a></li>
+    <li><a href="#g5">Nhóm 5 — Đơn hàng, Thanh toán & Vận chuyển</a></li>
+    <li><a href="#g6">Nhóm 6 — Blog & Nội dung</a></li>
+    <li><a href="#g7">Sơ đồ tổng quan — Liên kết giữa các nhóm</a></li>
+  </ol>
+</div>
+
+<!-- ═══════════════ NHÓM 1 ═══════════════ -->
+<div class="diagram-section page-break" id="g1">
+  <h2>Nhóm 1 — Khách hàng & Tài khoản</h2>
+  <p class="desc">Quản lý thông tin khách hàng, địa chỉ giao hàng, danh sách yêu thích.</p>
+  <pre class="mermaid">
+erDiagram
+    KHACHHANG ||--o{ DIACHI : "có nhiều"
+    KHACHHANG ||--o| DSYEUTHICH : "có"
+    DSYEUTHICH ||--o{ SPYEUTHICH : "chứa"
+    SANPHAM ||--o{ SPYEUTHICH : "được thêm"
+
+    KHACHHANG {
+        bigint id PK
+        varchar customer_code UK
+        varchar full_name
+        varchar phone UK
+        varchar email UK
+        varchar password_hash
+        date birthday
+        enum gender
+        enum status
+        enum role
+    }
+
+    DIACHI {
+        bigint id PK
+        bigint customer_id FK
+        varchar receiver_name
+        varchar receiver_phone
+        varchar province
+        varchar district
+        varchar ward
+        varchar address_line
+        tinyint is_default
+    }
+
+    DSYEUTHICH {
+        bigint id PK
+        bigint customer_id FK
+    }
+
+    SPYEUTHICH {
+        bigint id PK
+        bigint wishlist_id FK
+        bigint product_id FK
+    }
+  </pre>
+  <p class="legend">1 Khách hàng → N Địa chỉ &nbsp;|&nbsp; 1 Khách hàng → 1 Danh sách yêu thích → N Sản phẩm yêu thích</p>
+</div>
+
+<!-- ═══════════════ NHÓM 2 ═══════════════ -->
+<div class="diagram-section page-break" id="g2">
+  <h2>Nhóm 2 — Danh mục & Sản phẩm</h2>
+  <p class="desc">Sản phẩm thuộc danh mục và thương hiệu; có biến thể, ảnh, thuộc tính mở rộng và đánh giá.</p>
+  <pre class="mermaid">
+erDiagram
+    DANHMUC ||--o{ SANPHAM : "chứa"
+    DANHMUC ||--o{ DANHMUC : "DM cha-con"
+    THUONGHIEU ||--o{ SANPHAM : "sở hữu"
+    SANPHAM ||--o{ BIENTHE : "có"
+    SANPHAM ||--o{ ANHSP : "có"
+    BIENTHE ||--o{ ANHSP : "riêng"
+    SANPHAM ||--o{ DANHGIA : "nhận"
+    KHACHHANG ||--o{ DANHGIA : "viết"
+    SANPHAM ||--o{ GIATRITHUOCTINH : "có"
+    BIENTHE ||--o{ GIATRITHUOCTINH : "có"
+    DINHNGHIATHUOCTINH ||--o{ GIATRITHUOCTINH : "xác định"
+
+    DANHMUC {
+        bigint id PK
+        bigint parent_id FK
+        varchar name
+        varchar slug UK
+        int sort_order
+        tinyint is_active
+    }
+
+    THUONGHIEU {
+        bigint id PK
+        varchar name UK
+        varchar slug UK
+        varchar logo
+        tinyint is_active
+    }
+
+    SANPHAM {
+        bigint id PK
+        bigint brand_id FK
+        bigint category_id FK
+        varchar name
+        varchar slug UK
+        varchar sku UK
+        enum product_type
+        decimal base_price
+        enum stock_status
+        varchar material
+        varchar color
+        int warranty_months
+        decimal rating_average
+        tinyint is_featured
+        tinyint is_active
+    }
+
+    BIENTHE {
+        bigint id PK
+        bigint product_id FK
+        varchar variant_name
+        varchar variant_sku UK
+        varchar option_color
+        varchar option_size
+        varchar option_material
+        decimal price
+        tinyint is_default
+        tinyint is_active
+    }
+
+    ANHSP {
+        bigint id PK
+        bigint product_id FK
+        bigint variant_id FK
+        varchar image_url
+        varchar alt_text
+        int sort_order
+        tinyint is_primary
+    }
+
+    DANHGIA {
+        bigint id PK
+        bigint product_id FK
+        bigint customer_id FK
+        varchar reviewer_name
+        tinyint rating
+        varchar title
+        text content
+        enum status
+    }
+
+    DINHNGHIATHUOCTINH {
+        bigint id PK
+        varchar code UK
+        varchar label
+        enum data_type
+    }
+
+    GIATRITHUOCTINH {
+        bigint id PK
+        bigint product_id FK
+        bigint variant_id FK
+        bigint attribute_id FK
+        text value_text
+        decimal value_number
+    }
+  </pre>
+  <p class="legend">1 Danh mục → N Sản phẩm &nbsp;|&nbsp; 1 Sản phẩm → N Biến thể, N Ảnh, N Đánh giá &nbsp;|&nbsp; Thuộc tính mở rộng EAV</p>
+</div>
+
+<!-- ═══════════════ NHÓM 3 ═══════════════ -->
+<div class="diagram-section page-break" id="g3">
+  <h2>Nhóm 3 — Tồn kho & Kho hàng</h2>
+  <p class="desc">Quản lý số lượng tồn kho theo sản phẩm/biến thể tại từng kho, cảnh báo hết hàng.</p>
+  <pre class="mermaid">
+erDiagram
+    SANPHAM ||--o{ TONKHO : "được theo dõi"
+    BIENTHE ||--o{ TONKHO : "theo biến thể"
+    KHO ||--o{ TONKHO : "lưu trữ tại"
+    SANPHAM ||--o{ CANHBAOTON : "phát sinh"
+    DONHANG ||--o{ CANHBAOTON : "từ đơn"
+
+    KHO {
+        bigint id PK
+        varchar name
+        varchar code UK
+        varchar address
+        tinyint is_default
+    }
+
+    TONKHO {
+        bigint id PK
+        bigint product_id FK
+        bigint variant_id FK
+        bigint warehouse_id FK
+        int quantity_on_hand
+        int quantity_reserved
+        int reorder_level
+    }
+
+    CANHBAOTON {
+        bigint id PK
+        bigint product_id FK
+        bigint order_id FK
+        text message
+        varchar alert_type
+        tinyint is_read
+        timestamp created_at
+    }
+  </pre>
+  <p class="legend">1 Sản phẩm + 1 Kho → 1 bản ghi Tồn kho (UNIQUE: product_id, variant_id, warehouse_id)</p>
+</div>
+
+<!-- ═══════════════ NHÓM 4 ═══════════════ -->
+<div class="diagram-section page-break" id="g4">
+  <h2>Nhóm 4 — Giỏ hàng & Khuyến mãi</h2>
+  <p class="desc">Giỏ hàng phiên làm việc; mã giảm giá áp dụng cho giỏ hàng và đơn hàng.</p>
+  <pre class="mermaid">
+erDiagram
+    KHACHHANG ||--o{ GIOHANG : "sở hữu"
+    GIOHANG ||--o{ CHITIETGIO : "chứa"
+    SANPHAM ||--o{ CHITIETGIO : "được thêm"
+    BIENTHE ||--o{ CHITIETGIO : "theo biến thể"
+    MAGIAMGIA ||--o{ GIOHANG : "áp dụng"
+    MAGIAMGIA ||--o{ SUDUNGMGG : "được sử dụng"
+    KHACHHANG ||--o{ SUDUNGMGG : "sử dụng"
+
+    GIOHANG {
+        bigint id PK
+        varchar cart_token UK
+        bigint customer_id FK
+        bigint coupon_id FK
+        text note
+        enum status
+    }
+
+    CHITIETGIO {
+        bigint id PK
+        bigint cart_id FK
+        bigint product_id FK
+        bigint variant_id FK
+        varchar product_sku
+        varchar product_name
+        decimal unit_price
+        int quantity
+        decimal line_total
+    }
+
+    MAGIAMGIA {
+        bigint id PK
+        varchar code UK
+        varchar name
+        enum discount_type
+        decimal discount_value
+        decimal min_order_amount
+        decimal max_discount_amount
+        int total_usage_limit
+        int per_customer_limit
+        datetime starts_at
+        datetime ends_at
+        tinyint is_active
+    }
+
+    SUDUNGMGG {
+        bigint id PK
+        bigint coupon_id FK
+        bigint customer_id FK
+        bigint order_id
+        timestamp redeemed_at
+    }
+  </pre>
+  <p class="legend">1 Giỏ hàng → N Chi tiết giỏ &nbsp;|&nbsp; 1 Mã giảm giá → N Lượt sử dụng</p>
+</div>
+
+<!-- ═══════════════ NHÓM 5 ═══════════════ -->
+<div class="diagram-section page-break" id="g5">
+  <h2>Nhóm 5 — Đơn hàng, Thanh toán & Vận chuyển</h2>
+  <p class="desc">Xử lý đơn hàng, chi tiết sản phẩm đã mua, thanh toán, vận chuyển, và lịch sử trạng thái.</p>
+  <pre class="mermaid">
+erDiagram
+    KHACHHANG ||--o{ DONHANG : "đặt"
+    MAGIAMGIA ||--o{ DONHANG : "giảm giá"
+    DONHANG ||--o{ CHITIETDON : "gồm"
+    SANPHAM ||--o{ CHITIETDON : "được mua"
+    BIENTHE ||--o{ CHITIETDON : "biến thể"
+    DONHANG ||--o{ THANHTOAN : "thanh toán"
+    PTTHANHTOAN ||--o{ THANHTOAN : "theo PT"
+    DONHANG ||--o{ VANCHUYEN : "giao hàng"
+    PTVANCHUYEN ||--o{ VANCHUYEN : "theo PT"
+    DONHANG ||--o{ LICHSUDON : "ghi nhận"
+
+    DONHANG {
+        bigint id PK
+        varchar order_code UK
+        bigint customer_id FK
+        bigint coupon_id FK
+        varchar customer_name
+        varchar customer_phone
+        text customer_address
+        decimal subtotal
+        decimal shipping_fee
+        decimal discount_amount
+        decimal grand_total
+        enum payment_status
+        enum fulfillment_status
+        varchar status
+        tinyint inventory_deducted
+        tinyint inventory_restocked
+        datetime ordered_at
+    }
+
+    CHITIETDON {
+        bigint id PK
+        bigint order_id FK
+        bigint product_id FK
+        bigint variant_id FK
+        varchar product_sku
+        varchar product_name
+        varchar product_image
+        decimal unit_price
+        int quantity
+        decimal line_total
+        tinyint stock_deducted
+    }
+
+    PTTHANHTOAN {
+        bigint id PK
+        varchar code UK
+        varchar name
+        tinyint is_active
+    }
+
+    THANHTOAN {
+        bigint id PK
+        bigint order_id FK
+        bigint payment_method_id FK
+        decimal amount
+        varchar transaction_code
+        enum status
+        datetime paid_at
+    }
+
+    PTVANCHUYEN {
+        bigint id PK
+        varchar code UK
+        varchar name
+        decimal fee
+        varchar eta_label
+        tinyint is_active
+    }
+
+    VANCHUYEN {
+        bigint id PK
+        bigint order_id FK
+        bigint shipping_method_id FK
+        varchar recipient_name
+        varchar recipient_phone
+        text recipient_address
+        decimal shipping_fee
+        varchar tracking_code
+        enum status
+    }
+
+    LICHSUDON {
+        bigint id PK
+        bigint order_id FK
+        varchar from_status
+        varchar to_status
+        text note
+        varchar changed_by
+        timestamp created_at
+    }
+  </pre>
+  <p class="legend">1 Đơn hàng → N Chi tiết, N Thanh toán, N Vận chuyển, N Lịch sử trạng thái</p>
+</div>
+
+<!-- ═══════════════ NHÓM 6 ═══════════════ -->
+<div class="diagram-section page-break" id="g6">
+  <h2>Nhóm 6 — Blog & Nội dung</h2>
+  <p class="desc">Bài viết blog, danh mục blog, thẻ tag (N–N), và banner quảng cáo.</p>
+  <pre class="mermaid">
+erDiagram
+    DMBLOG ||--o{ BAIVIET : "phân loại"
+    BAIVIET ||--o{ BAIVIET_THE : "gắn tag"
+    THEBLOG ||--o{ BAIVIET_THE : "thuộc về"
+
+    DMBLOG {
+        bigint id PK
+        varchar name UK
+        varchar slug UK
+        text description
+        tinyint is_active
+    }
+
+    BAIVIET {
+        bigint id PK
+        bigint category_id FK
+        varchar slug UK
+        varchar title
+        text excerpt
+        longtext content
+        varchar image
+        varchar read_time
+        date published_at
+        tinyint is_featured
+        enum status
+    }
+
+    THEBLOG {
+        bigint id PK
+        varchar name UK
+        varchar slug UK
+    }
+
+    BAIVIET_THE {
+        bigint post_id PK_FK
+        bigint tag_id PK_FK
+    }
+
+    BANNER {
+        bigint id PK
+        varchar title
+        varchar subtitle
+        varchar image_url
+        varchar link_url
+        varchar position
+        int sort_order
+        tinyint is_active
+        datetime starts_at
+        datetime ends_at
+    }
+
+    CAUHINH {
+        bigint id PK
+        varchar setting_key UK
+        text setting_value
+        enum value_type
+    }
+  </pre>
+  <p class="legend">1 Danh mục Blog → N Bài viết &nbsp;|&nbsp; Bài viết ↔ Thẻ: quan hệ N–N qua bảng trung gian</p>
+</div>
+
+<!-- ═══════════════ TỔNG QUAN ═══════════════ -->
+<div class="diagram-section page-break" id="g7">
+  <h2>Sơ đồ tổng quan — Liên kết giữa các nhóm</h2>
+  <p class="desc">Thể hiện cách các nhóm chức năng kết nối với nhau thông qua các thực thể trung tâm: <strong>KHACHHANG</strong>, <strong>SANPHAM</strong>, <strong>DONHANG</strong>.</p>
+  <pre class="mermaid">
+erDiagram
+    KHACHHANG ||--o{ DIACHI : ""
+    KHACHHANG ||--o| DSYEUTHICH : ""
+    DSYEUTHICH ||--o{ SPYEUTHICH : ""
+    KHACHHANG ||--o{ GIOHANG : ""
+    KHACHHANG ||--o{ DONHANG : ""
+    KHACHHANG ||--o{ DANHGIA : ""
+    KHACHHANG ||--o{ SUDUNGMGG : ""
+
+    DANHMUC ||--o{ SANPHAM : ""
+    THUONGHIEU ||--o{ SANPHAM : ""
+
+    SANPHAM ||--o{ BIENTHE : ""
+    SANPHAM ||--o{ ANHSP : ""
+    SANPHAM ||--o{ TONKHO : ""
+    SANPHAM ||--o{ DANHGIA : ""
+    SANPHAM ||--o{ SPYEUTHICH : ""
+    SANPHAM ||--o{ CHITIETGIO : ""
+    SANPHAM ||--o{ CHITIETDON : ""
+    SANPHAM ||--o{ CANHBAOTON : ""
+    SANPHAM ||--o{ GIATRITHUOCTINH : ""
+
+    BIENTHE ||--o{ TONKHO : ""
+    BIENTHE ||--o{ CHITIETGIO : ""
+    BIENTHE ||--o{ CHITIETDON : ""
+    BIENTHE ||--o{ ANHSP : ""
+
+    KHO ||--o{ TONKHO : ""
+
+    GIOHANG ||--o{ CHITIETGIO : ""
+    MAGIAMGIA ||--o{ GIOHANG : ""
+    MAGIAMGIA ||--o{ DONHANG : ""
+    MAGIAMGIA ||--o{ SUDUNGMGG : ""
+
+    DONHANG ||--o{ CHITIETDON : ""
+    DONHANG ||--o{ THANHTOAN : ""
+    DONHANG ||--o{ VANCHUYEN : ""
+    DONHANG ||--o{ LICHSUDON : ""
+    DONHANG ||--o{ CANHBAOTON : ""
+
+    PTTHANHTOAN ||--o{ THANHTOAN : ""
+    PTVANCHUYEN ||--o{ VANCHUYEN : ""
+
+    DMBLOG ||--o{ BAIVIET : ""
+    BAIVIET ||--o{ BAIVIET_THE : ""
+    THEBLOG ||--o{ BAIVIET_THE : ""
+
+    DINHNGHIATHUOCTINH ||--o{ GIATRITHUOCTINH : ""
+
+    KHACHHANG {
+        bigint id PK
+        varchar customer_code
+        varchar full_name
+        varchar phone
+        enum role
+    }
+    SANPHAM {
+        bigint id PK
+        varchar name
+        varchar sku
+        decimal base_price
+        enum stock_status
+    }
+    DONHANG {
+        bigint id PK
+        varchar order_code
+        decimal grand_total
+        varchar status
+    }
+    DANHMUC {
+        bigint id PK
+        varchar name
+    }
+    THUONGHIEU {
+        bigint id PK
+        varchar name
+    }
+    BIENTHE {
+        bigint id PK
+        bigint product_id FK
+        varchar variant_sku
+        decimal price
+    }
+    KHO {
+        bigint id PK
+        varchar name
+    }
+    MAGIAMGIA {
+        bigint id PK
+        varchar code
+    }
+    GIOHANG {
+        bigint id PK
+        varchar cart_token
+    }
+    PTTHANHTOAN {
+        bigint id PK
+        varchar name
+    }
+    PTVANCHUYEN {
+        bigint id PK
+        varchar name
+    }
+    DMBLOG {
+        bigint id PK
+        varchar name
+    }
+    BAIVIET {
+        bigint id PK
+        varchar title
+    }
+    THEBLOG {
+        bigint id PK
+        varchar name
+    }
+    DIACHI { bigint id PK }
+    DSYEUTHICH { bigint id PK }
+    SPYEUTHICH { bigint id PK }
+    TONKHO { bigint id PK }
+    CANHBAOTON { bigint id PK }
+    ANHSP { bigint id PK }
+    DANHGIA { bigint id PK }
+    CHITIETGIO { bigint id PK }
+    CHITIETDON { bigint id PK }
+    THANHTOAN { bigint id PK }
+    VANCHUYEN { bigint id PK }
+    LICHSUDON { bigint id PK }
+    SUDUNGMGG { bigint id PK }
+    BAIVIET_THE { bigint post_id PK }
+    GIATRITHUOCTINH { bigint id PK }
+    DINHNGHIATHUOCTINH { bigint id PK }
+    BANNER { bigint id PK }
+    CAUHINH { bigint id PK }
+  </pre>
+  <p class="legend">
+    Sơ đồ thể hiện toàn bộ 32 bảng và các mối quan hệ PK–FK trong hệ thống Winsum Home.<br>
+    Ba thực thể trung tâm: <strong>KHACHHANG</strong> (khách hàng), <strong>SANPHAM</strong> (sản phẩm), <strong>DONHANG</strong> (đơn hàng).
+  </p>
+</div>
+
+<!-- ═══════ BẢNG TÓM TẮT NHÓM ═══════ -->
+<div class="diagram-section page-break">
+  <h2>Bảng tóm tắt các nhóm chức năng</h2>
+  <table style="width:100%; border-collapse:collapse; font-size:14px;">
+    <tr style="background:#1e3a5f; color:#fff;">
+      <th style="padding:8px; border:1px solid #ccc; text-align:center;">Nhóm</th>
+      <th style="padding:8px; border:1px solid #ccc;">Chức năng</th>
+      <th style="padding:8px; border:1px solid #ccc;">Các bảng</th>
+      <th style="padding:8px; border:1px solid #ccc;">Liên kết với nhóm khác qua</th>
+    </tr>
+    <tr>
+      <td style="padding:8px; border:1px solid #ddd; text-align:center; font-weight:bold;">1</td>
+      <td style="padding:8px; border:1px solid #ddd;">Khách hàng & Tài khoản</td>
+      <td style="padding:8px; border:1px solid #ddd;">customers, customer_addresses, wishlists, wishlist_items</td>
+      <td style="padding:8px; border:1px solid #ddd;">customers.id → orders, carts, reviews, coupon_redemptions</td>
+    </tr>
+    <tr style="background:#f9f9f9;">
+      <td style="padding:8px; border:1px solid #ddd; text-align:center; font-weight:bold;">2</td>
+      <td style="padding:8px; border:1px solid #ddd;">Danh mục & Sản phẩm</td>
+      <td style="padding:8px; border:1px solid #ddd;">categories, brands, products, product_variants, product_images, product_reviews, product_attribute_definitions, product_attribute_values</td>
+      <td style="padding:8px; border:1px solid #ddd;">products.id → inventory, cart_items, order_items, wishlist_items</td>
+    </tr>
+    <tr>
+      <td style="padding:8px; border:1px solid #ddd; text-align:center; font-weight:bold;">3</td>
+      <td style="padding:8px; border:1px solid #ddd;">Tồn kho & Kho hàng</td>
+      <td style="padding:8px; border:1px solid #ddd;">warehouses, inventory_items, inventory_alerts</td>
+      <td style="padding:8px; border:1px solid #ddd;">product_id ← products; order_id ← orders</td>
+    </tr>
+    <tr style="background:#f9f9f9;">
+      <td style="padding:8px; border:1px solid #ddd; text-align:center; font-weight:bold;">4</td>
+      <td style="padding:8px; border:1px solid #ddd;">Giỏ hàng & Khuyến mãi</td>
+      <td style="padding:8px; border:1px solid #ddd;">carts, cart_items, coupons, coupon_redemptions</td>
+      <td style="padding:8px; border:1px solid #ddd;">customer_id ← customers; product_id ← products; coupon_id → orders</td>
+    </tr>
+    <tr>
+      <td style="padding:8px; border:1px solid #ddd; text-align:center; font-weight:bold;">5</td>
+      <td style="padding:8px; border:1px solid #ddd;">Đơn hàng, Thanh toán & Vận chuyển</td>
+      <td style="padding:8px; border:1px solid #ddd;">orders, order_items, order_payments, order_shipments, order_status_histories, payment_methods, shipping_methods</td>
+      <td style="padding:8px; border:1px solid #ddd;">customer_id ← customers; product_id ← products; coupon_id ← coupons</td>
+    </tr>
+    <tr style="background:#f9f9f9;">
+      <td style="padding:8px; border:1px solid #ddd; text-align:center; font-weight:bold;">6</td>
+      <td style="padding:8px; border:1px solid #ddd;">Blog & Nội dung</td>
+      <td style="padding:8px; border:1px solid #ddd;">blog_categories, blog_posts, blog_tags, blog_post_tags, banners, settings</td>
+      <td style="padding:8px; border:1px solid #ddd;">Độc lập (không FK sang nhóm khác)</td>
+    </tr>
+  </table>
+</div>
+
+<p style="text-align:center; color:#999; font-size:12px; margin-top:20px;">
+  Biểu đồ ER tự động render bằng Mermaid.js — Đồ án Winsum Home, tháng 5/2026
+</p>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    er: {
+      diagramPadding: 20,
+      layoutDirection: 'TB',
+      minEntityWidth: 100,
+      minEntityHeight: 75,
+      entityPadding: 15,
+      useMaxWidth: true,
+    },
+    themeVariables: {
+      primaryColor: '#e8f4fd',
+      primaryBorderColor: '#1e3a5f',
+      primaryTextColor: '#1a1a1a',
+      lineColor: '#5b7fa3',
+      secondaryColor: '#f0f7e6',
+    }
+  });
+</script>
+
+</body>
+</html>

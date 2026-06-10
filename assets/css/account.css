@@ -1,0 +1,166 @@
+.account-page .account-notice {
+    margin-bottom: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-muted);
+    font-size: var(--text-sm);
+}
+
+.account-layout {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-5);
+}
+
+.account-layout--single {
+    grid-template-columns: 1fr;
+    max-width: 560px;
+}
+
+#profile-edit {
+    scroll-margin-top: 100px;
+}
+
+.account-form-hint {
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    line-height: var(--leading-normal);
+}
+
+.account-notice--ok {
+    background: var(--color-accent-soft);
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.account-notice--err {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.account-form button[type="submit"] {
+    margin-top: var(--space-2);
+    height: 44px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--color-accent);
+    color: #fff;
+    font-weight: 600;
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: background var(--duration-normal) var(--ease-out);
+}
+
+.account-form button[type="submit"]:hover {
+    background: var(--color-accent-hover);
+}
+
+.account-guest {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
+    padding: var(--space-6);
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-muted);
+}
+
+.account-card--summary {
+    margin-bottom: var(--space-4);
+}
+
+.account-form {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    display: grid;
+    gap: var(--space-3);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-soft);
+}
+
+.account-form h2 {
+    margin-bottom: var(--space-1);
+    font-size: var(--text-xl);
+    font-weight: 600;
+    letter-spacing: var(--tracking-tight);
+}
+
+.account-form label {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-text-muted);
+}
+
+.account-form input {
+    height: 44px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    padding: 0 var(--space-4);
+    font-size: var(--text-sm);
+    transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+}
+
+.account-form input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+
+.account-card {
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+}
+
+.account-card h2 {
+    font-size: var(--text-2xl);
+    font-weight: 600;
+    letter-spacing: var(--tracking-tight);
+    margin-bottom: var(--space-2);
+}
+
+.account-card p {
+    margin-top: var(--space-2);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
+}
+
+.account-card p strong {
+    color: var(--color-text);
+}
+
+.account-actions {
+    margin-top: var(--space-5);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
+}
+
+.account-actions form {
+    margin: 0;
+}
+
+/* Cột mã đơn — chi tiết trong admin.css (.admin-orders-page) */
+
+.admin-status-form {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.admin-status-form select {
+    min-width: 110px;
+}
+
+@media (max-width: 768px) {
+    .account-layout {
+        grid-template-columns: 1fr;
+    }
+}

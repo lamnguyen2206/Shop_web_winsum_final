@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Mô tả cơ sở dữ liệu – Winsum Home</title>
+<style>
+  @page { size: A4; margin: 20mm 18mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 13pt;
+    line-height: 1.55;
+    color: #1a1a1a;
+    max-width: 210mm;
+    margin: 0 auto;
+    padding: 20mm 18mm;
+  }
+  h1 {
+    text-align: center;
+    font-size: 20pt;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 13pt;
+    color: #555;
+    margin-bottom: 30px;
+  }
+  h2 {
+    font-size: 16pt;
+    border-bottom: 2px solid #333;
+    padding-bottom: 4px;
+    margin-top: 32px;
+    margin-bottom: 12px;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 14pt;
+    margin-top: 22px;
+    margin-bottom: 8px;
+    page-break-after: avoid;
+  }
+  h4 {
+    font-size: 13pt;
+    margin-top: 16px;
+    margin-bottom: 6px;
+    page-break-after: avoid;
+  }
+  p, li { text-align: justify; }
+  ol, ul { padding-left: 22px; }
+  ol li { margin-bottom: 10px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 18px 0;
+    font-size: 12pt;
+    page-break-inside: auto;
+  }
+  tr { page-break-inside: avoid; }
+  th, td {
+    border: 1px solid #444;
+    padding: 5px 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: #e8e8e8;
+    font-weight: bold;
+    text-align: center;
+  }
+  td:first-child { text-align: center; width: 40px; }
+  td:nth-child(4) { text-align: center; }
+  .schema-box {
+    background: #f5f5f5;
+    border: 1px solid #ccc;
+    padding: 14px 18px;
+    font-family: "Courier New", monospace;
+    font-size: 10.5pt;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 10px 0 20px 0;
+  }
+  .link-table th, .link-table td { font-size: 10.5pt; padding: 3px 5px; text-align: center; }
+  .link-table td:last-child { text-align: left; font-size: 10pt; }
+  .note { font-style: italic; color: #555; font-size: 12pt; }
+  .badge-used { color: #1a6b1a; font-weight: bold; }
+  .badge-future { color: #8a6d00; font-weight: bold; }
+  .page-break { page-break-before: always; }
+  .toc { margin: 20px 0 30px 0; }
+  .toc li { margin-bottom: 4px; }
+  .toc a { text-decoration: none; color: #1a1a1a; }
+  .module-list { columns: 2; column-gap: 24px; }
+  @media print {
+    body { padding: 0; }
+    .no-print { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Mô tả cơ sở dữ liệu</h1>
+<p class="subtitle">Đồ án: Website bán hàng Winsum Home – Thiết bị chiếu sáng &amp; nội thất<br>
+Hệ quản trị cơ sở dữ liệu: MySQL 8.x &nbsp;|&nbsp; Tên CSDL: <code>winsumwebfinal</code> &nbsp;|&nbsp; Mã hóa: UTF-8 (utf8mb4)</p>
+
+<div class="toc">
+<h3>Mục lục</h3>
+<ol>
+  <li><a href="#p0">Tổng quan hệ thống dữ liệu</a></li>
+  <li><a href="#p1">Các bước chuyển thực thể thành bảng quan hệ</a></li>
+  <li><a href="#p2">Lược đồ dữ liệu (bảng đang triển khai)</a></li>
+  <li><a href="#p3">Mô tả chi tiết các bảng</a></li>
+  <li><a href="#p4">Bảng liên kết (Khóa chính – Khóa phụ)</a></li>
+  <li><a href="#p5">Lưu trữ ngoài CSDL và bảng dự phòng mở rộng</a></li>
+  <li><a href="#p6">Biểu đồ ERD</a></li>
+</ol>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="p0">0. Tổng quan hệ thống dữ liệu</h2>
+
+<p>Hệ thống Winsum Home sử dụng mô hình quan hệ (RDBMS) với MySQL. Ứng dụng PHP truy cập CSDL qua lớp <strong>Repository</strong> (<code>includes/*-repository.php</code>). Dữ liệu được tổ chức theo các nhóm nghiệp vụ chính của website thương mại điện tử.</p>
+
+<p>Báo cáo này mô tả <strong>24 bảng thực sự được sử dụng</strong> trong phiên bản đồ án hiện tại, bao gồm 22 bảng trong file schema <code>winsumwebfinal (2).sql</code> và 2 bảng được tạo tự động khi chạy ứng dụng (<code>blog_comments</code>, <code>order_return_requests</code>). Các bảng thiết kế sẵn nhưng chưa tích hợp code được liệt kê riêng ở mục VI.</p>
+
+<h4>Phân nhóm bảng theo nghiệp vụ</h4>
+<ul class="module-list">
+  <li><strong>Người dùng:</strong> customers</li>
+  <li><strong>Danh mục &amp; sản phẩm:</strong> categories, brands, products, product_images</li>
+  <li><strong>Tồn kho:</strong> warehouses, inventory_items, inventory_alerts</li>
+  <li><strong>Đơn hàng:</strong> orders, order_items, order_payments, order_shipments, order_status_histories</li>
+  <li><strong>Hoàn hàng:</strong> order_return_requests</li>
+  <li><strong>Khuyến mãi:</strong> coupons, coupon_redemptions</li>
+  <li><strong>Thanh toán &amp; vận chuyển:</strong> payment_methods, shipping_methods</li>
+  <li><strong>Đánh giá:</strong> product_reviews</li>
+  <li><strong>Blog:</strong> blog_categories, blog_posts, blog_comments</li>
+  <li><strong>Giao diện:</strong> banners</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="p1">I. Các bước chuyển thực thể ER thành bảng quan hệ</h2>
+
+<ol>
+<li><strong>Bước 1 – Thực thể mạnh → bảng riêng:</strong> Mỗi thực thể độc lập có khóa chính riêng. <em>Ví dụ:</em> thực thể <strong>Khách hàng</strong> → bảng <code>customers</code> (PK: <code>id</code>).</li>
+
+<li><strong>Bước 2 – Thực thể yếu / chi tiết → bảng phụ thuộc:</strong> Bảng con mang FK trỏ về bảng cha. <em>Ví dụ:</em> <strong>Chi tiết đơn hàng</strong> → <code>order_items</code> với FK <code>order_id</code> → <code>orders.id</code>; lưu snapshot tên/giá sản phẩm tại thời điểm đặt hàng.</li>
+
+<li><strong>Bước 3 – Quan hệ 1–N:</strong> Thêm FK ở bảng phía “nhiều”. <em>Ví dụ:</em> một <strong>Danh mục</strong> có nhiều <strong>Sản phẩm</strong> → <code>products.category_id</code> → <code>categories.id</code>.</li>
+
+<li><strong>Bước 4 – Quan hệ N–N (khi cần):</strong> Tạo bảng trung gian. Trong phiên bản hiện tại, hệ thống <strong>chưa triển khai</strong> bảng trung gian tag blog (<code>blog_post_tags</code>); danh mục blog dùng quan hệ 1–N qua <code>blog_posts.category_id</code>.</li>
+
+<li><strong>Bước 5 – Tách thuộc tính đa trị:</strong> Ảnh sản phẩm, dòng đơn hàng, lịch sử trạng thái được tách bảng riêng thay vì lưu JSON trong bảng chính.</li>
+
+<li><strong>Bước 6 – Ràng buộc toàn vẹn:</strong> Áp dụng NOT NULL, UNIQUE, ENUM, DEFAULT, ON DELETE CASCADE/SET NULL trên FK để đảm bảo dữ liệu nhất quán khi thêm/sửa/xóa.</li>
+</ol>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="p2" class="page-break">II. Lược đồ dữ liệu</h2>
+
+<p>Lược đồ dưới đây chỉ gồm các bảng <span class="badge-used">đang sử dụng</span> trong ứng dụng Winsum Home.</p>
+
+<div class="schema-box">KHACHHANG (<u>id</u>, customer_code, full_name, phone, email, password_hash, status, role, last_login_at, created_at, updated_at)
+DANHMUC (<u>id</u>, <i>parent_id</i>, name, slug, description, sort_order, is_active)
+THUONGHIEU (<u>id</u>, name, slug, description, is_active)
+SANPHAM (<u>id</u>, <i>brand_id</i>, <i>category_id</i>, name, slug, sku, base_price, stock_status, material, color, rating_average, is_featured, is_active)
+ANHSP (<u>id</u>, <i>product_id</i>, image_url, alt_text, sort_order, is_primary)
+KHO (<u>id</u>, name, code, address, is_default)
+TONKHO (<u>id</u>, <i>product_id</i>, <i>warehouse_id</i>, quantity_on_hand, quantity_reserved, reorder_level)
+CANHBAOTON (<u>id</u>, <i>product_id</i>, <i>order_id</i>, message, alert_type, is_read, created_at)
+MAGIAMGIA (<u>id</u>, code, name, discount_type, discount_value, min_order_amount, per_customer_limit, is_active)
+SUDUNGMGG (<u>id</u>, <i>coupon_id</i>, <i>customer_id</i>, order_id, redeemed_at)
+DONHANG (<u>id</u>, order_code, <i>customer_id</i>, <i>coupon_id</i>, customer_name, customer_phone, customer_address, subtotal, shipping_fee, discount_amount, grand_total, payment_status, fulfillment_status, status, inventory_deducted, inventory_restocked)
+CHITIETDON (<u>id</u>, <i>order_id</i>, <i>product_id</i>, product_sku, product_name, unit_price, quantity, line_total, stock_deducted)
+PTTHANHTOAN (<u>id</u>, code, name, description, is_active)
+THANHTOAN (<u>id</u>, <i>order_id</i>, <i>payment_method_id</i>, amount, status, paid_at)
+PTVANCHUYEN (<u>id</u>, code, name, fee, eta_label, is_active)
+VANCHUYEN (<u>id</u>, <i>order_id</i>, <i>shipping_method_id</i>, recipient_name, recipient_phone, recipient_address, shipping_fee, status)
+LICHSUDON (<u>id</u>, <i>order_id</i>, from_status, to_status, note, changed_by, created_at)
+YEUCAUHOAN (<u>id</u>, <i>order_id</i>, <i>customer_id</i>, reason, description, evidence_url, bank_account_number, status, admin_note, created_at, refunded_at)
+DANHGIA (<u>id</u>, <i>product_id</i>, <i>customer_id</i>, reviewer_name, rating, title, content, status)
+DMBLOG (<u>id</u>, name, slug, is_active)
+BAIVIET (<u>id</u>, <i>category_id</i>, slug, title, excerpt, content, image, status, published_at)
+BINHLUANBLOG (<u>id</u>, <i>post_id</i>, <i>customer_id</i>, author_name, content, status, created_at)
+BANNER (<u>id</u>, title, subtitle, image_url, link_url, position, sort_order, is_active)
+</div>
+<p class="note">Ghi chú: <u>Gạch chân</u> = Khóa chính (PK), <i>In nghiêng</i> = Khóa ngoại (FK). Tên tiếng Việt là tên logic trong báo cáo; tên vật lý trong MySQL là tên tiếng Anh trong ngoặc ở phần III.</p>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="p3" class="page-break">III. Mô tả chi tiết cơ sở dữ liệu các bảng</h2>
+
+<h3>A. Nhóm người dùng</h3>
+
+<h4>Bảng 1: KHACHHANG (customers)</h4>
+<p>Lưu tài khoản khách hàng và quản trị viên. Phân quyền qua cột <code>role</code> (customer/admin). Module: đăng ký, đăng nhập, quản trị khách hàng.</p>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK, AUTO_INCREMENT</td><td>ID khách hàng</td></tr>
+<tr><td>2</td><td>customer_code</td><td>VARCHAR(30)</td><td>NOT NULL, UNIQUE</td><td>Mã khách (VD: WS202605198985)</td></tr>
+<tr><td>3</td><td>full_name</td><td>VARCHAR(120)</td><td>NOT NULL</td><td>Họ và tên</td></tr>
+<tr><td>4</td><td>phone</td><td>VARCHAR(30)</td><td>NOT NULL, UNIQUE</td><td>Số điện thoại đăng nhập</td></tr>
+<tr><td>5</td><td>email</td><td>VARCHAR(120)</td><td>UNIQUE, NULL</td><td>Email</td></tr>
+<tr><td>6</td><td>password_hash</td><td>VARCHAR(255)</td><td>NULL</td><td>Mật khẩu bcrypt</td></tr>
+<tr><td>7</td><td>birthday</td><td>DATE</td><td>NULL</td><td>Ngày sinh</td></tr>
+<tr><td>8</td><td>gender</td><td>ENUM</td><td>NULL</td><td>male / female / other</td></tr>
+<tr><td>9</td><td>status</td><td>ENUM</td><td>DEFAULT 'active'</td><td>active / inactive / blocked</td></tr>
+<tr><td>10</td><td>role</td><td>ENUM</td><td>DEFAULT 'customer'</td><td>customer / admin</td></tr>
+<tr><td>11</td><td>last_login_at</td><td>DATETIME</td><td>NULL</td><td>Lần đăng nhập cuối</td></tr>
+<tr><td>12</td><td>created_at</td><td>TIMESTAMP</td><td>NOT NULL</td><td>Ngày tạo</td></tr>
+<tr><td>13</td><td>updated_at</td><td>TIMESTAMP</td><td>NOT NULL</td><td>Ngày cập nhật</td></tr>
+</table>
+<p class="note">Địa chỉ giao hàng được nhập trực tiếp khi checkout và lưu vào bảng <code>orders.customer_address</code>, không dùng bảng <code>customer_addresses</code> trong phiên bản hiện tại.</p>
+
+<h3>B. Nhóm danh mục &amp; sản phẩm</h3>
+
+<h4>Bảng 2: DANHMUC (categories)</h4>
+<p>Danh mục sản phẩm (đèn thả trần, đèn bàn, kệ trang trí…). Hỗ trợ danh mục cha–con qua <code>parent_id</code> tự tham chiếu.</p>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID danh mục</td></tr>
+<tr><td>2</td><td>parent_id</td><td>BIGINT</td><td>FK → categories.id</td><td>Danh mục cha</td></tr>
+<tr><td>3</td><td>name</td><td>VARCHAR(120)</td><td>NOT NULL</td><td>Tên danh mục</td></tr>
+<tr><td>4</td><td>slug</td><td>VARCHAR(140)</td><td>NOT NULL, UNIQUE</td><td>URL thân thiện</td></tr>
+<tr><td>5</td><td>description</td><td>TEXT</td><td>NULL</td><td>Mô tả</td></tr>
+<tr><td>6</td><td>image</td><td>VARCHAR(255)</td><td>NULL</td><td>Ảnh danh mục</td></tr>
+<tr><td>7</td><td>sort_order</td><td>INT</td><td>DEFAULT 0</td><td>Thứ tự hiển thị</td></tr>
+<tr><td>8</td><td>is_active</td><td>TINYINT(1)</td><td>DEFAULT 1</td><td>Trạng thái hiển thị</td></tr>
+</table>
+
+<h4>Bảng 3: THUONGHIEU (brands)</h4>
+<p>Thương hiệu sản phẩm. Dùng khi lọc catalog và gán brand khi tạo sản phẩm mới.</p>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID thương hiệu</td></tr>
+<tr><td>2</td><td>name</td><td>VARCHAR(120)</td><td>NOT NULL, UNIQUE</td><td>Tên thương hiệu</td></tr>
+<tr><td>3</td><td>slug</td><td>VARCHAR(140)</td><td>NOT NULL, UNIQUE</td><td>Slug URL</td></tr>
+<tr><td>4</td><td>description</td><td>TEXT</td><td>NULL</td><td>Mô tả</td></tr>
+<tr><td>5</td><td>logo</td><td>VARCHAR(255)</td><td>NULL</td><td>Logo</td></tr>
+<tr><td>6</td><td>website</td><td>VARCHAR(255)</td><td>NULL</td><td>Website</td></tr>
+<tr><td>7</td><td>is_active</td><td>TINYINT(1)</td><td>DEFAULT 1</td><td>Kích hoạt</td></tr>
+</table>
+
+<h4>Bảng 4: SANPHAM (products)</h4>
+<p>Thông tin sản phẩm bán trên website. Phiên bản đồ án chỉ bán sản phẩm đơn (<code>product_type = 'simple'</code>), chưa dùng biến thể (variant).</p>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID sản phẩm</td></tr>
+<tr><td>2</td><td>brand_id</td><td>BIGINT</td><td>FK → brands.id</td><td>Thương hiệu</td></tr>
+<tr><td>3</td><td>category_id</td><td>BIGINT</td><td>FK → categories.id, NOT NULL</td><td>Danh mục</td></tr>
+<tr><td>4</td><td>name</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Tên sản phẩm</td></tr>
+<tr><td>5</td><td>slug</td><td>VARCHAR(300)</td><td>NOT NULL, UNIQUE</td><td>URL sản phẩm</td></tr>
+<tr><td>6</td><td>short_description</td><td>TEXT</td><td>NULL</td><td>Mô tả ngắn</td></tr>
+<tr><td>7</td><td>description</td><td>LONGTEXT</td><td>NULL</td><td>Mô tả chi tiết</td></tr>
+<tr><td>8</td><td>sku</td><td>VARCHAR(60)</td><td>NOT NULL, UNIQUE</td><td>Mã SKU</td></tr>
+<tr><td>9</td><td>product_type</td><td>ENUM</td><td>DEFAULT 'simple'</td><td>simple / variant</td></tr>
+<tr><td>10</td><td>base_price</td><td>DECIMAL(12,2)</td><td>NOT NULL</td><td>Giá bán (VND)</td></tr>
+<tr><td>11</td><td>compare_at_price</td><td>DECIMAL(12,2)</td><td>NULL</td><td>Giá gạch</td></tr>
+<tr><td>12</td><td>stock_status</td><td>ENUM</td><td>DEFAULT 'in_stock'</td><td>in_stock / out_of_stock / preorder</td></tr>
+<tr><td>13</td><td>material</td><td>VARCHAR(120)</td><td>NULL</td><td>Chất liệu</td></tr>
+<tr><td>14</td><td>color</td><td>VARCHAR(120)</td><td>NULL</td><td>Màu sắc</td></tr>
+<tr><td>15</td><td>warranty_months</td><td>INT</td><td>NULL</td><td>Bảo hành (tháng)</td></tr>
+<tr><td>16</td><td>rating_average</td><td>DECIMAL(3,2)</td><td>DEFAULT 0</td><td>Điểm TB (cập nhật từ reviews)</td></tr>
+<tr><td>17</td><td>rating_count</td><td>INT</td><td>DEFAULT 0</td><td>Số lượt đánh giá</td></tr>
+<tr><td>18</td><td>is_featured</td><td>TINYINT(1)</td><td>DEFAULT 0</td><td>Sản phẩm nổi bật trang chủ</td></tr>
+<tr><td>19</td><td>is_active</td><td>TINYINT(1)</td><td>DEFAULT 1</td><td>Hiển thị trên web</td></tr>
+<tr><td>20</td><td>published_at</td><td>DATETIME</td><td>NULL</td><td>Ngày xuất bản</td></tr>
+</table>
+
+<h4>Bảng 5: ANHSP (product_images)</h4>
+<p>Ảnh sản phẩm; mỗi sản phẩm có một ảnh chính (<code>is_primary = 1</code>).</p>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID ảnh</td></tr>
+<tr><td>2</td><td>product_id</td><td>BIGINT</td><td>FK → products.id</td><td>Sản phẩm</td></tr>
+<tr><td>3</td><td>variant_id</td><td>BIGINT</td><td>NULL</td><td>Dự phòng biến thể (chưa dùng)</td></tr>
+<tr><td>4</td><td>image_url</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Đường dẫn ảnh</td></tr>
+<tr><td>5</td><td>alt_text</td><td>VARCHAR(255)</td><td>NULL</td><td>Mô tả ảnh (SEO)</td></tr>
+<tr><td>6</td><td>sort_order</td><td>INT</td><td>DEFAULT 0</td><td>Thứ tự</td></tr>
+<tr><td>7</td><td>is_primary</td><td>TINYINT(1)</td><td>DEFAULT 0</td><td>Ảnh đại diện</td></tr>
+</table>
+
+<h3>C. Nhóm tồn kho</h3>
+
+<h4>Bảng 6: KHO (warehouses)</h4>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID kho</td></tr>
+<tr><td>2</td><td>name</td><td>VARCHAR(120)</td><td>NOT NULL</td><td>Tên kho</td></tr>
+<tr><td>3</td><td>code</td><td>VARCHAR(30)</td><td>NOT NULL, UNIQUE</td><td>Mã kho (VD: MAIN)</td></tr>
+<tr><td>4</td><td>address</td><td>VARCHAR(255)</td><td>NULL</td><td>Địa chỉ kho</td></tr>
+<tr><td>5</td><td>is_default</td><td>TINYINT(1)</td><td>DEFAULT 0</td><td>Kho mặc định trừ tồn</td></tr>
+</table>
+
+<h4>Bảng 7: TONKHO (inventory_items)</h4>
+<p>Quản lý số lượng tồn theo sản phẩm và kho. Tự động trừ/hoàn kho khi admin cập nhật trạng thái đơn hàng.</p>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID bản ghi</td></tr>
+<tr><td>2</td><td>product_id</td><td>BIGINT</td><td>FK → products.id</td><td>Sản phẩm</td></tr>
+<tr><td>3</td><td>variant_id</td><td>BIGINT</td><td>NULL</td><td>Luôn NULL (chưa dùng variant)</td></tr>
+<tr><td>4</td><td>warehouse_id</td><td>BIGINT</td><td>FK → warehouses.id</td><td>Kho</td></tr>
+<tr><td>5</td><td>quantity_on_hand</td><td>INT</td><td>DEFAULT 0</td><td>Số lượng tồn</td></tr>
+<tr><td>6</td><td>quantity_reserved</td><td>INT</td><td>DEFAULT 0</td><td>Số lượng giữ chỗ</td></tr>
+<tr><td>7</td><td>reorder_level</td><td>INT</td><td>DEFAULT 0</td><td>Ngưỡng cảnh báo nhập thêm</td></tr>
+</table>
+
+<h4>Bảng 8: CANHBAOTON (inventory_alerts)</h4>
+<p>Cảnh báo admin khi sản phẩm hết tồn sau đơn hàng; hiển thị trên dashboard quản trị.</p>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID cảnh báo</td></tr>
+<tr><td>2</td><td>product_id</td><td>BIGINT</td><td>FK → products.id</td><td>Sản phẩm</td></tr>
+<tr><td>3</td><td>order_id</td><td>BIGINT</td><td>FK → orders.id</td><td>Đơn liên quan</td></tr>
+<tr><td>4</td><td>message</td><td>TEXT</td><td>NOT NULL</td><td>Nội dung cảnh báo</td></tr>
+<tr><td>5</td><td>alert_type</td><td>VARCHAR(30)</td><td>DEFAULT 'stock_depleted'</td><td>Loại cảnh báo</td></tr>
+<tr><td>6</td><td>is_read</td><td>TINYINT(1)</td><td>DEFAULT 0</td><td>Đã đọc/xử lý</td></tr>
+<tr><td>7</td><td>created_at</td><td>TIMESTAMP</td><td>NOT NULL</td><td>Thời điểm tạo</td></tr>
+</table>
+
+<h3 class="page-break">D. Nhóm đơn hàng &amp; hoàn hàng</h3>
+
+<h4>Bảng 9: DONHANG (orders)</h4>
+<p>Bảng trung tâm của quy trình mua bán. Lưu thông tin người đặt, tổng tiền, trạng thái thanh toán và giao hàng.</p>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID đơn hàng</td></tr>
+<tr><td>2</td><td>order_code</td><td>VARCHAR(30)</td><td>NOT NULL, UNIQUE</td><td>Mã đơn (VD: WS05205171)</td></tr>
+<tr><td>3</td><td>customer_id</td><td>BIGINT</td><td>FK → customers.id</td><td>Khách (NULL nếu mua không đăng nhập)</td></tr>
+<tr><td>4</td><td>customer_name</td><td>VARCHAR(120)</td><td>NOT NULL</td><td>Tên người đặt</td></tr>
+<tr><td>5</td><td>customer_phone</td><td>VARCHAR(30)</td><td>NOT NULL</td><td>SĐT</td></tr>
+<tr><td>6</td><td>customer_email</td><td>VARCHAR(120)</td><td>NULL</td><td>Email</td></tr>
+<tr><td>7</td><td>customer_address</td><td>TEXT</td><td>NOT NULL</td><td>Địa chỉ giao hàng</td></tr>
+<tr><td>8</td><td>customer_note</td><td>TEXT</td><td>NULL</td><td>Ghi chú khách</td></tr>
+<tr><td>9</td><td>coupon_id</td><td>BIGINT</td><td>FK → coupons.id</td><td>Mã giảm giá áp dụng</td></tr>
+<tr><td>10</td><td>coupon_code</td><td>VARCHAR(50)</td><td>NULL</td><td>Snapshot mã coupon</td></tr>
+<tr><td>11</td><td>subtotal</td><td>DECIMAL(12,2)</td><td>NOT NULL</td><td>Tổng tiền hàng</td></tr>
+<tr><td>12</td><td>shipping_fee</td><td>DECIMAL(12,2)</td><td>DEFAULT 0</td><td>Phí ship</td></tr>
+<tr><td>13</td><td>discount_amount</td><td>DECIMAL(12,2)</td><td>DEFAULT 0</td><td>Tiền giảm</td></tr>
+<tr><td>14</td><td>grand_total</td><td>DECIMAL(12,2)</td><td>NOT NULL</td><td>Tổng thanh toán</td></tr>
+<tr><td>15</td><td>currency_code</td><td>VARCHAR(10)</td><td>DEFAULT 'VND'</td><td>Loại tiền</td></tr>
+<tr><td>16</td><td>payment_status</td><td>ENUM</td><td>DEFAULT 'unpaid'</td><td>unpaid / paid / failed / refunded</td></tr>
+<tr><td>17</td><td>fulfillment_status</td><td>ENUM</td><td>DEFAULT 'pending'</td><td>pending → delivered / returned…</td></tr>
+<tr><td>18</td><td>status</td><td>VARCHAR(30)</td><td>DEFAULT 'pending'</td><td>Trạng thái đơn tổng hợp</td></tr>
+<tr><td>19</td><td>inventory_deducted</td><td>TINYINT(1)</td><td>DEFAULT 0</td><td>Đã trừ kho</td></tr>
+<tr><td>20</td><td>inventory_restocked</td><td>TINYINT(1)</td><td>DEFAULT 0</td><td>Đã hoàn kho (hủy/hoàn)</td></tr>
+<tr><td>21</td><td>ordered_at</td><td>DATETIME</td><td>NOT NULL</td><td>Thời điểm đặt</td></tr>
+</table>
+
+<h4>Bảng 10: CHITIETDON (order_items)</h4>
+<p>Chi tiết từng dòng sản phẩm trong đơn. Lưu snapshot SKU, tên, giá tại thời điểm đặt để không bị ảnh hưởng khi admin sửa sản phẩm sau này.</p>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID dòng</td></tr>
+<tr><td>2</td><td>order_id</td><td>BIGINT</td><td>FK → orders.id</td><td>Đơn hàng</td></tr>
+<tr><td>3</td><td>product_id</td><td>BIGINT</td><td>FK → products.id</td><td>Sản phẩm</td></tr>
+<tr><td>4</td><td>product_sku</td><td>VARCHAR(60)</td><td>NOT NULL</td><td>SKU lúc đặt</td></tr>
+<tr><td>5</td><td>product_name</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Tên SP lúc đặt</td></tr>
+<tr><td>6</td><td>product_image</td><td>VARCHAR(255)</td><td>NULL</td><td>Ảnh SP lúc đặt</td></tr>
+<tr><td>7</td><td>unit_price</td><td>DECIMAL(12,2)</td><td>NOT NULL</td><td>Đơn giá</td></tr>
+<tr><td>8</td><td>quantity</td><td>INT</td><td>NOT NULL</td><td>Số lượng</td></tr>
+<tr><td>9</td><td>line_total</td><td>DECIMAL(12,2)</td><td>NOT NULL</td><td>Thành tiền dòng</td></tr>
+<tr><td>10</td><td>stock_deducted</td><td>TINYINT(1)</td><td>DEFAULT 0</td><td>Đã trừ kho dòng này</td></tr>
+</table>
+
+<h4>Bảng 11: PTTHANHTOAN (payment_methods)</h4>
+<p>Danh mục phương thức: COD và chuyển khoản ngân hàng (VietQR demo).</p>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID</td></tr>
+<tr><td>2</td><td>code</td><td>VARCHAR(30)</td><td>NOT NULL, UNIQUE</td><td>cod / bank_transfer</td></tr>
+<tr><td>3</td><td>name</td><td>VARCHAR(120)</td><td>NOT NULL</td><td>Tên hiển thị</td></tr>
+<tr><td>4</td><td>description</td><td>TEXT</td><td>NULL</td><td>Mô tả</td></tr>
+<tr><td>5</td><td>is_active</td><td>TINYINT(1)</td><td>DEFAULT 1</td><td>Kích hoạt</td></tr>
+</table>
+
+<h4>Bảng 12: THANHTOAN (order_payments)</h4>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID giao dịch</td></tr>
+<tr><td>2</td><td>order_id</td><td>BIGINT</td><td>FK → orders.id</td><td>Đơn hàng</td></tr>
+<tr><td>3</td><td>payment_method_id</td><td>BIGINT</td><td>FK → payment_methods.id</td><td>Phương thức</td></tr>
+<tr><td>4</td><td>amount</td><td>DECIMAL(12,2)</td><td>NOT NULL</td><td>Số tiền</td></tr>
+<tr><td>5</td><td>transaction_code</td><td>VARCHAR(120)</td><td>NULL</td><td>Mã giao dịch</td></tr>
+<tr><td>6</td><td>status</td><td>ENUM</td><td>DEFAULT 'pending'</td><td>pending / success / failed / refunded</td></tr>
+<tr><td>7</td><td>paid_at</td><td>DATETIME</td><td>NULL</td><td>Thời điểm thanh toán</td></tr>
+</table>
+
+<h4>Bảng 13: PTVANCHUYEN (shipping_methods)</h4>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID</td></tr>
+<tr><td>2</td><td>code</td><td>VARCHAR(30)</td><td>NOT NULL, UNIQUE</td><td>express_24h / standard</td></tr>
+<tr><td>3</td><td>name</td><td>VARCHAR(120)</td><td>NOT NULL</td><td>Tên hiển thị</td></tr>
+<tr><td>4</td><td>fee</td><td>DECIMAL(12,2)</td><td>NOT NULL</td><td>Phí vận chuyển</td></tr>
+<tr><td>5</td><td>eta_label</td><td>VARCHAR(120)</td><td>NULL</td><td>Thời gian dự kiến</td></tr>
+<tr><td>6</td><td>is_active</td><td>TINYINT(1)</td><td>DEFAULT 1</td><td>Kích hoạt</td></tr>
+</table>
+
+<h4>Bảng 14: VANCHUYEN (order_shipments)</h4>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID vận chuyển</td></tr>
+<tr><td>2</td><td>order_id</td><td>BIGINT</td><td>FK → orders.id</td><td>Đơn hàng</td></tr>
+<tr><td>3</td><td>shipping_method_id</td><td>BIGINT</td><td>FK → shipping_methods.id</td><td>Phương thức VC</td></tr>
+<tr><td>4</td><td>tracking_number</td><td>VARCHAR(120)</td><td>NULL</td><td>Mã vận đơn</td></tr>
+<tr><td>5</td><td>recipient_name</td><td>VARCHAR(120)</td><td>NOT NULL</td><td>Người nhận</td></tr>
+<tr><td>6</td><td>recipient_phone</td><td>VARCHAR(30)</td><td>NOT NULL</td><td>SĐT nhận</td></tr>
+<tr><td>7</td><td>recipient_address</td><td>TEXT</td><td>NOT NULL</td><td>Địa chỉ nhận</td></tr>
+<tr><td>8</td><td>shipping_fee</td><td>DECIMAL(12,2)</td><td>NOT NULL</td><td>Phí ship</td></tr>
+<tr><td>9</td><td>status</td><td>ENUM</td><td>DEFAULT 'pending'</td><td>pending / shipping / delivered…</td></tr>
+</table>
+
+<h4>Bảng 15: LICHSUDON (order_status_histories)</h4>
+<p>Ghi lại mọi thay đổi trạng thái đơn hàng và thanh toán (audit trail).</p>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID</td></tr>
+<tr><td>2</td><td>order_id</td><td>BIGINT</td><td>FK → orders.id</td><td>Đơn hàng</td></tr>
+<tr><td>3</td><td>from_status</td><td>VARCHAR(30)</td><td>NULL</td><td>Trạng thái cũ</td></tr>
+<tr><td>4</td><td>to_status</td><td>VARCHAR(30)</td><td>NOT NULL</td><td>Trạng thái mới</td></tr>
+<tr><td>5</td><td>note</td><td>TEXT</td><td>NULL</td><td>Ghi chú</td></tr>
+<tr><td>6</td><td>changed_by</td><td>VARCHAR(120)</td><td>NULL</td><td>customer / admin</td></tr>
+<tr><td>7</td><td>created_at</td><td>TIMESTAMP</td><td>NOT NULL</td><td>Thời điểm</td></tr>
+</table>
+
+<h4>Bảng 16: YEUCAUHOAN (order_return_requests)</h4>
+<p>Bảng tạo tự động bởi <code>return-repository.php</code>. Quản lý quy trình hoàn hàng 4 giai đoạn: pending → accepted → goods_received → completed (hoặc rejected).</p>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID yêu cầu</td></tr>
+<tr><td>2</td><td>order_id</td><td>BIGINT</td><td>FK → orders.id</td><td>Đơn cần hoàn</td></tr>
+<tr><td>3</td><td>customer_id</td><td>BIGINT</td><td>NOT NULL</td><td>Khách yêu cầu</td></tr>
+<tr><td>4</td><td>reason</td><td>VARCHAR(80)</td><td>NOT NULL</td><td>Lý do hoàn</td></tr>
+<tr><td>5</td><td>description</td><td>TEXT</td><td>NOT NULL</td><td>Mô tả chi tiết</td></tr>
+<tr><td>6</td><td>evidence_url</td><td>VARCHAR(500)</td><td>NULL</td><td>Ảnh bằng chứng</td></tr>
+<tr><td>7</td><td>bank_account_number</td><td>VARCHAR(40)</td><td>NULL</td><td>Số TK hoàn tiền</td></tr>
+<tr><td>8</td><td>bank_account_name</td><td>VARCHAR(120)</td><td>NULL</td><td>Tên chủ TK</td></tr>
+<tr><td>9</td><td>bank_name</td><td>VARCHAR(120)</td><td>NULL</td><td>Ngân hàng</td></tr>
+<tr><td>10</td><td>return_shipping_cost</td><td>DECIMAL(12,2)</td><td>NULL</td><td>Phí ship hoàn</td></tr>
+<tr><td>11</td><td>status</td><td>ENUM</td><td>DEFAULT 'pending'</td><td>pending / accepted / goods_received / completed / rejected</td></tr>
+<tr><td>12</td><td>admin_note</td><td>TEXT</td><td>NULL</td><td>Ghi chú admin</td></tr>
+<tr><td>13</td><td>reviewed_at</td><td>TIMESTAMP</td><td>NULL</td><td>Thời điểm duyệt</td></tr>
+<tr><td>14</td><td>goods_received_at</td><td>TIMESTAMP</td><td>NULL</td><td>Đã nhận hàng hoàn</td></tr>
+<tr><td>15</td><td>refunded_at</td><td>TIMESTAMP</td><td>NULL</td><td>Đã hoàn tiền</td></tr>
+<tr><td>16</td><td>created_at</td><td>TIMESTAMP</td><td>NOT NULL</td><td>Thời điểm tạo</td></tr>
+</table>
+
+<h3>E. Nhóm khuyến mãi</h3>
+
+<h4>Bảng 17: MAGIAMGIA (coupons)</h4>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID mã</td></tr>
+<tr><td>2</td><td>code</td><td>VARCHAR(50)</td><td>NOT NULL, UNIQUE</td><td>Mã coupon</td></tr>
+<tr><td>3</td><td>name</td><td>VARCHAR(120)</td><td>NOT NULL</td><td>Tên chương trình</td></tr>
+<tr><td>4</td><td>discount_type</td><td>ENUM</td><td>NOT NULL</td><td>fixed / percent / shipping</td></tr>
+<tr><td>5</td><td>discount_value</td><td>DECIMAL(12,2)</td><td>NOT NULL</td><td>Giá trị giảm</td></tr>
+<tr><td>6</td><td>min_order_amount</td><td>DECIMAL(12,2)</td><td>NULL</td><td>Đơn tối thiểu</td></tr>
+<tr><td>7</td><td>max_discount_amount</td><td>DECIMAL(12,2)</td><td>NULL</td><td>Giảm tối đa</td></tr>
+<tr><td>8</td><td>per_customer_limit</td><td>INT</td><td>NULL</td><td>Giới hạn/khách</td></tr>
+<tr><td>9</td><td>starts_at / ends_at</td><td>DATETIME</td><td>NULL</td><td>Thời hạn hiệu lực</td></tr>
+<tr><td>10</td><td>is_active</td><td>TINYINT(1)</td><td>DEFAULT 1</td><td>Kích hoạt</td></tr>
+</table>
+
+<h4>Bảng 18: SUDUNGMGG (coupon_redemptions)</h4>
+<p>Theo dõi lượt sử dụng coupon theo khách hàng và đơn hàng.</p>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID</td></tr>
+<tr><td>2</td><td>coupon_id</td><td>BIGINT</td><td>FK → coupons.id</td><td>Mã giảm giá</td></tr>
+<tr><td>3</td><td>customer_id</td><td>BIGINT</td><td>FK → customers.id</td><td>Khách sử dụng</td></tr>
+<tr><td>4</td><td>order_id</td><td>BIGINT</td><td>NULL</td><td>Đơn áp dụng</td></tr>
+<tr><td>5</td><td>redeemed_at</td><td>TIMESTAMP</td><td>NOT NULL</td><td>Thời điểm dùng</td></tr>
+</table>
+
+<h3>F. Nhóm đánh giá sản phẩm</h3>
+
+<h4>Bảng 19: DANHGIA (product_reviews)</h4>
+<p>Khách đánh giá sau khi mua; admin duyệt trước khi hiển thị công khai.</p>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID đánh giá</td></tr>
+<tr><td>2</td><td>product_id</td><td>BIGINT</td><td>FK → products.id</td><td>Sản phẩm</td></tr>
+<tr><td>3</td><td>customer_id</td><td>BIGINT</td><td>FK → customers.id</td><td>Khách (có thể NULL)</td></tr>
+<tr><td>4</td><td>reviewer_name</td><td>VARCHAR(120)</td><td>NOT NULL</td><td>Tên người đánh giá</td></tr>
+<tr><td>5</td><td>rating</td><td>TINYINT</td><td>NOT NULL</td><td>Số sao (1–5)</td></tr>
+<tr><td>6</td><td>title</td><td>VARCHAR(255)</td><td>NULL</td><td>Tiêu đề</td></tr>
+<tr><td>7</td><td>content</td><td>TEXT</td><td>NULL</td><td>Nội dung</td></tr>
+<tr><td>8</td><td>status</td><td>ENUM</td><td>DEFAULT 'pending'</td><td>pending / approved / rejected</td></tr>
+</table>
+
+<h3 class="page-break">G. Nhóm blog &amp; giao diện</h3>
+
+<h4>Bảng 20: DMBLOG (blog_categories)</h4>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID danh mục</td></tr>
+<tr><td>2</td><td>name</td><td>VARCHAR(120)</td><td>NOT NULL, UNIQUE</td><td>Tên (Tin tức, Xu hướng…)</td></tr>
+<tr><td>3</td><td>slug</td><td>VARCHAR(140)</td><td>NOT NULL, UNIQUE</td><td>Slug URL</td></tr>
+<tr><td>4</td><td>is_active</td><td>TINYINT(1)</td><td>DEFAULT 1</td><td>Kích hoạt</td></tr>
+</table>
+
+<h4>Bảng 21: BAIVIET (blog_posts)</h4>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID bài viết</td></tr>
+<tr><td>2</td><td>category_id</td><td>BIGINT</td><td>FK → blog_categories.id</td><td>Danh mục blog</td></tr>
+<tr><td>3</td><td>slug</td><td>VARCHAR(255)</td><td>NOT NULL, UNIQUE</td><td>URL bài viết</td></tr>
+<tr><td>4</td><td>title</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Tiêu đề</td></tr>
+<tr><td>5</td><td>excerpt</td><td>TEXT</td><td>NOT NULL</td><td>Tóm tắt</td></tr>
+<tr><td>6</td><td>content</td><td>LONGTEXT</td><td>NOT NULL</td><td>Nội dung HTML</td></tr>
+<tr><td>7</td><td>category</td><td>VARCHAR(120)</td><td>NOT NULL</td><td>Tên danh mục (denormalized)</td></tr>
+<tr><td>8</td><td>image</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Ảnh đại diện</td></tr>
+<tr><td>9</td><td>read_time</td><td>VARCHAR(40)</td><td>NOT NULL</td><td>Thời gian đọc</td></tr>
+<tr><td>10</td><td>published_at</td><td>DATE</td><td>NOT NULL</td><td>Ngày xuất bản</td></tr>
+<tr><td>11</td><td>is_featured</td><td>TINYINT(1)</td><td>DEFAULT 0</td><td>Bài nổi bật</td></tr>
+<tr><td>12</td><td>status</td><td>ENUM</td><td>DEFAULT 'published'</td><td>draft / published / archived</td></tr>
+</table>
+
+<h4>Bảng 22: BINHLUANBLOG (blog_comments)</h4>
+<p>Bảng tạo tự động bởi <code>blog-comment-repository.php</code>. Bình luận cần admin duyệt trước khi hiển thị.</p>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID bình luận</td></tr>
+<tr><td>2</td><td>post_id</td><td>BIGINT</td><td>NOT NULL</td><td>Bài viết</td></tr>
+<tr><td>3</td><td>customer_id</td><td>BIGINT</td><td>NULL</td><td>Khách (nếu đăng nhập)</td></tr>
+<tr><td>4</td><td>author_name</td><td>VARCHAR(120)</td><td>NOT NULL</td><td>Tên hiển thị</td></tr>
+<tr><td>5</td><td>author_email</td><td>VARCHAR(120)</td><td>NULL</td><td>Email</td></tr>
+<tr><td>6</td><td>content</td><td>TEXT</td><td>NOT NULL</td><td>Nội dung</td></tr>
+<tr><td>7</td><td>status</td><td>ENUM</td><td>DEFAULT 'pending'</td><td>pending / approved / rejected</td></tr>
+<tr><td>8</td><td>created_at</td><td>TIMESTAMP</td><td>NOT NULL</td><td>Thời điểm gửi</td></tr>
+</table>
+
+<h4>Bảng 23: BANNER (banners)</h4>
+<p>Banner hero trang chủ; lọc theo <code>position = 'home_hero'</code> và <code>is_active = 1</code>.</p>
+<table>
+<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
+<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID banner</td></tr>
+<tr><td>2</td><td>title</td><td>VARCHAR(160)</td><td>NOT NULL</td><td>Tiêu đề</td></tr>
+<tr><td>3</td><td>subtitle</td><td>VARCHAR(255)</td><td>NULL</td><td>Phụ đề</td></tr>
+<tr><td>4</td><td>image_url</td><td>VARCHAR(255)</td><td>NULL</td><td>Ảnh nền</td></tr>
+<tr><td>5</td><td>link_url</td><td>VARCHAR(255)</td><td>NULL</td><td>Liên kết khi click</td></tr>
+<tr><td>6</td><td>position</td><td>VARCHAR(60)</td><td>NOT NULL</td><td>Vị trí (home_hero…)</td></tr>
+<tr><td>7</td><td>sort_order</td><td>INT</td><td>DEFAULT 0</td><td>Thứ tự</td></tr>
+<tr><td>8</td><td>is_active</td><td>TINYINT(1)</td><td>DEFAULT 1</td><td>Kích hoạt</td></tr>
+<tr><td>9</td><td>starts_at / ends_at</td><td>DATETIME</td><td>NULL</td><td>Lịch hiển thị</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="p4" class="page-break">IV. Bảng liên kết (Khóa chính – Khóa phụ)</h2>
+
+<p>Chỉ liệt kê các quan hệ FK giữa các bảng <span class="badge-used">đang triển khai</span>.</p>
+
+<table class="link-table">
+<tr>
+  <th>Bảng chứa FK</th>
+  <th>Cột FK</th>
+  <th>Tham chiếu</th>
+  <th>Quan hệ</th>
+</tr>
+<tr><td>categories</td><td>parent_id</td><td>categories.id</td><td>1 DM cha – N DM con</td></tr>
+<tr><td>products</td><td>brand_id</td><td>brands.id</td><td>1 TH – N SP</td></tr>
+<tr><td>products</td><td>category_id</td><td>categories.id</td><td>1 DM – N SP</td></tr>
+<tr><td>product_images</td><td>product_id</td><td>products.id</td><td>1 SP – N Ảnh</td></tr>
+<tr><td>inventory_items</td><td>product_id</td><td>products.id</td><td>1 SP – N Tồn kho</td></tr>
+<tr><td>inventory_items</td><td>warehouse_id</td><td>warehouses.id</td><td>1 Kho – N Tồn kho</td></tr>
+<tr><td>inventory_alerts</td><td>product_id</td><td>products.id</td><td>1 SP – N Cảnh báo</td></tr>
+<tr><td>inventory_alerts</td><td>order_id</td><td>orders.id</td><td>1 ĐH – N Cảnh báo</td></tr>
+<tr><td>product_reviews</td><td>product_id</td><td>products.id</td><td>1 SP – N Đánh giá</td></tr>
+<tr><td>product_reviews</td><td>customer_id</td><td>customers.id</td><td>1 KH – N Đánh giá</td></tr>
+<tr><td>orders</td><td>customer_id</td><td>customers.id</td><td>1 KH – N Đơn hàng</td></tr>
+<tr><td>orders</td><td>coupon_id</td><td>coupons.id</td><td>1 MGG – N Đơn hàng</td></tr>
+<tr><td>order_items</td><td>order_id</td><td>orders.id</td><td>1 ĐH – N Chi tiết</td></tr>
+<tr><td>order_items</td><td>product_id</td><td>products.id</td><td>1 SP – N Dòng ĐH</td></tr>
+<tr><td>order_payments</td><td>order_id</td><td>orders.id</td><td>1 ĐH – N Thanh toán</td></tr>
+<tr><td>order_payments</td><td>payment_method_id</td><td>payment_methods.id</td><td>1 PT TT – N TT</td></tr>
+<tr><td>order_shipments</td><td>order_id</td><td>orders.id</td><td>1 ĐH – N Vận chuyển</td></tr>
+<tr><td>order_shipments</td><td>shipping_method_id</td><td>shipping_methods.id</td><td>1 PT VC – N VC</td></tr>
+<tr><td>order_status_histories</td><td>order_id</td><td>orders.id</td><td>1 ĐH – N Lịch sử</td></tr>
+<tr><td>order_return_requests</td><td>order_id</td><td>orders.id</td><td>1 ĐH – N Yêu cầu hoàn</td></tr>
+<tr><td>coupon_redemptions</td><td>coupon_id</td><td>coupons.id</td><td>1 MGG – N Lượt dùng</td></tr>
+<tr><td>coupon_redemptions</td><td>customer_id</td><td>customers.id</td><td>1 KH – N Lượt dùng</td></tr>
+<tr><td>blog_posts</td><td>category_id</td><td>blog_categories.id</td><td>1 DM Blog – N Bài viết</td></tr>
+<tr><td>blog_comments</td><td>post_id</td><td>blog_posts.id</td><td>1 Bài – N Bình luận</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="p5">V. Lưu trữ ngoài CSDL và bảng dự phòng mở rộng</h2>
+
+<h3>5.1. Giỏ hàng lưu trong PHP Session</h3>
+<p>Phiên bản đồ án <strong>không sử dụng</strong> bảng <code>carts</code> và <code>cart_items</code>. Giỏ hàng được lưu trong biến session <code>$_SESSION['cart_items']</code> (file <code>includes/cart-store.php</code>). Mã coupon áp dụng tạm lưu trong <code>$_SESSION['cart_coupon']</code>. Khi khách checkout, dữ liệu giỏ được chuyển thành bản ghi trong bảng <code>orders</code> và <code>order_items</code>.</p>
+
+<h3>5.2. Bảng có trong schema SQL nhưng chưa tích hợp code</h3>
+<p>Các bảng sau tồn tại trong file import SQL ban đầu, phục vụ thiết kế mở rộng tương lai, <span class="badge-future">chưa được ứng dụng gọi</span>:</p>
+<table>
+<tr><th>Bảng</th><th>Mục đích thiết kế</th><th>Lý do chưa dùng</th></tr>
+<tr><td>customer_addresses</td><td>Nhiều địa chỉ/khách</td><td>Địa chỉ nhập trực tiếp khi đặt hàng</td></tr>
+<tr><td>product_variants</td><td>Biến thể SP (màu, size)</td><td>Chỉ bán SP đơn (simple)</td></tr>
+<tr><td>product_attribute_definitions<br>product_attribute_values</td><td>Thuộc tính động SP</td><td>Thuộc tính lưu trực tiếp trên products</td></tr>
+<tr><td>blog_tags, blog_post_tags</td><td>Tag blog N–N</td><td>Chưa triển khai tag</td></tr>
+<tr><td>carts, cart_items</td><td>Giỏ hàng DB</td><td>Dùng PHP Session</td></tr>
+<tr><td>wishlists, wishlist_items</td><td>Danh sách yêu thích</td><td>Chưa có tính năng</td></tr>
+<tr><td>settings</td><td>Cấu hình hệ thống</td><td>Cấu hình hard-code / file config</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════ -->
+<h2 id="p6" class="page-break">VI. Biểu đồ ERD</h2>
+
+<p>Sơ đồ ERD được tạo trong file <strong><code>docs/er-diagrams.html</code></strong>, chia thành 3 nhóm để dễ đọc trong báo cáo:</p>
+<ul>
+  <li><strong>Hình 1 – Sản phẩm &amp; tồn kho:</strong> categories, brands, products, product_images, warehouses, inventory_items, inventory_alerts</li>
+  <li><strong>Hình 2 – Đơn hàng &amp; thanh toán:</strong> customers, orders, order_items, coupons, coupon_redemptions, payment_methods, order_payments, shipping_methods, order_shipments, order_status_histories, order_return_requests</li>
+  <li><strong>Hình 3 – Blog &amp; nội dung:</strong> blog_categories, blog_posts, blog_comments, product_reviews, banners</li>
+</ul>
+<p class="note">Khi in báo cáo Word/PDF: mở <code>er-diagrams.html</code> trên trình duyệt → in hoặc chụp ảnh từng sơ đồ Mermaid để chèn vào mục Phụ lục.</p>
+
+<hr>
+<p style="text-align:center; color:#888; font-size:11pt; margin-top:30px;">
+  Tài liệu mô tả CSDL Winsum Home — Cập nhật theo code triển khai thực tế — Tháng 6/2026
+</p>
+
+</body>
+</html>
