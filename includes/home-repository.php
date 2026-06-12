@@ -7,28 +7,6 @@ function homeFormatCurrency(float $amount): string
     return number_format($amount, 0, ',', '.') . 'đ';
 }
 
-function homeGetHeroBanner(mysqli $conn, string $position = 'home_hero'): ?array
-{
-    $sql = "SELECT title, subtitle, image_url, link_url
-            FROM banners
-            WHERE position = ?
-              AND is_active = 1
-              AND (starts_at IS NULL OR starts_at <= NOW())
-              AND (ends_at IS NULL OR ends_at >= NOW())
-            ORDER BY sort_order ASC, id DESC
-            LIMIT 1";
-    $stmt = $conn->prepare($sql);
-    if (!$stmt) {
-        return null;
-    }
-    $stmt->bind_param('s', $position);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $banner = $result->fetch_assoc() ?: null;
-    $stmt->close();
-    return $banner;
-}
-
 function homeGetFeaturedCategories(mysqli $conn, ?int $limit = null): array
 {
     require_once __DIR__ . '/product-repository.php';

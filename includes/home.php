@@ -1,7 +1,6 @@
 <?php
 require __DIR__ . '/home-repository.php';
 
-$heroBanner = homeGetHeroBanner($conn);
 $displayCategories = homeGetDisplayCategories($conn);
 $bestsellerProducts = homeGetBestsellerProducts($conn, 8);
 $newsPosts = homeGetNewsPosts($conn, 2);
@@ -12,15 +11,15 @@ $newsPosts = homeGetNewsPosts($conn, 2);
         <div class="container hero-grid">
             <div class="hero-copy">
                 <p class="eyebrow">WINSUM HOME</p>
-                <h1><?php echo htmlspecialchars($heroBanner['title'] ?? 'Nội thất và chiếu sáng cao cấp cho không gian sống đẳng cấp'); ?></h1>
-                <p class="subtitle"><?php echo htmlspecialchars($heroBanner['subtitle'] ?? 'Khám phá bộ sưu tập đèn trang trí, nội thất nhập khẩu và giải pháp thiết kế đồng bộ theo chuẩn châu Âu.'); ?></p>
+                <h1>Nội thất và chiếu sáng cao cấp cho không gian sống đẳng cấp</h1>
+                <p class="subtitle">Khám phá bộ sưu tập đèn trang trí, nội thất nhập khẩu và giải pháp thiết kế đồng bộ theo chuẩn châu Âu.</p>
                 <div class="hero-actions">
                     <a href="<?php echo e(app_url('catalog')); ?>" class="btn btn-primary">Mua sắm ngay</a>
                     <a href="<?php echo e(app_url('blog')); ?>" class="btn btn-ghost">Xem tin tức</a>
                 </div>
             </div>
             <div class="hero-highlight">
-                <img src="<?php echo htmlspecialchars($heroBanner['image_url'] ?? 'assets/images/blog_3.png'); ?>" alt="Không gian nội thất Winsum">
+                <img src="assets/images/blog_3.png" alt="Không gian nội thất Winsum">
                 <div class="highlight-badge">BST Mới 2026</div>
             </div>
         </div>
