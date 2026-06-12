@@ -58,9 +58,9 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    border: 1px solid #dbeafe;
-    background: #fff;
-    color: #1e40af;
+    border: 1px solid var(--color-border-strong);
+    background: var(--color-surface);
+    color: var(--color-text);
     border-radius: 999px;
     padding: 8px 12px;
     font-size: 13px;
@@ -69,8 +69,8 @@
 }
 
 .filter-badge:hover {
-    background: #eff6ff;
-    border-color: #93c5fd;
+    background: var(--color-surface-muted);
+    border-color: var(--color-text-subtle);
 }
 
 .filter-badge span {
@@ -80,18 +80,18 @@
 .clear-all-filters {
     display: inline-flex;
     align-items: center;
-    border: 1px dashed #9ca3af;
+    border: 1px dashed var(--color-border-strong);
     border-radius: 999px;
     padding: 8px 12px;
     font-size: 13px;
-    color: #374151;
+    color: var(--color-text-muted);
     text-decoration: none;
-    background: #fff;
+    background: var(--color-surface);
 }
 
 .clear-all-filters:hover {
-    border-color: #6b7280;
-    background: #f9fafb;
+    border-color: var(--color-text-subtle);
+    background: var(--color-surface-muted);
 }
 
 /* Trang catalog: sidebar ~22%, lưới sản phẩm ~76% (còn lại sau gap) */

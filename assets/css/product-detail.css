@@ -291,9 +291,9 @@
 
 /* Tabs */
 .product-tabs {
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--color-border, #e5e7eb);
     border-radius: var(--radius-md, 12px);
-    background: #fff;
+    background: var(--color-surface, #fff);
     overflow: hidden;
     margin-bottom: 32px;
     box-shadow: var(--shadow-soft, 0 4px 20px rgba(17, 24, 39, 0.06));
@@ -322,7 +322,7 @@
 .product-tabs-nav button.is-active {
     color: var(--color-accent, #2f5d3f);
     border-bottom-color: var(--color-accent, #2f5d3f);
-    background: #fff;
+    background: var(--color-surface, #fff);
 }
 
 .product-tab-panel {

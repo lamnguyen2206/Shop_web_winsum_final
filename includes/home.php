@@ -3,7 +3,7 @@ require __DIR__ . '/home-repository.php';
 
 $displayCategories = homeGetDisplayCategories($conn);
 $bestsellerProducts = homeGetBestsellerProducts($conn, 8);
-$newsPosts = homeGetNewsPosts($conn, 2);
+$newsPosts = homeGetNewsPosts($conn, 4);
 ?>
 
 <section class="home-page">
@@ -19,35 +19,13 @@ $newsPosts = homeGetNewsPosts($conn, 2);
                 </div>
             </div>
             <div class="hero-highlight">
-                <img src="assets/images/blog_3.png" alt="Không gian nội thất Winsum">
+                <img src="assets/images/index-banner2.webp" alt="Không gian nội thất Winsum">
                 <div class="highlight-badge">BST Mới 2026</div>
             </div>
         </div>
     </section>
 
     <div class="home-showcase">
-        <section class="container home-voucher-section" aria-label="Mã giảm giá">
-            <article class="voucher-card">
-                <div class="voucher-card__content">
-                    <h3 class="voucher-card__title">XIN CHÀO</h3>
-                    <p class="voucher-card__desc">Giảm 40.000đ cho toàn bộ đơn hàng.</p>
-                    <p class="voucher-card__code">Mã: <strong>WINSUMXINCHAO</strong></p>
-                    <p class="voucher-card__note">Áp dụng 1 mã trên mỗi khách hàng.</p>
-                </div>
-                <div class="voucher-card__actions">
-                    <button
-                        type="button"
-                        class="voucher-card__info"
-                        aria-label="Thông tin mã giảm giá"
-                        title="Áp dụng 1 mã trên mỗi khách hàng."
-                    >
-                        <span aria-hidden="true">i</span>
-                    </button>
-                    <button type="button" class="voucher-card__copy" data-copy-code="WINSUMXINCHAO">Sao chép</button>
-                </div>
-            </article>
-        </section>
-
         <section class="container home-benefits-section" aria-label="Cam kết dịch vụ">
             <div class="home-benefits-grid">
                 <article class="benefit-card">
@@ -80,9 +58,11 @@ $newsPosts = homeGetNewsPosts($conn, 2);
                 </article>
             </div>
         </section>
+    </div>
 
+    <div class="home-dark">
         <section class="container home-category-section" aria-label="Danh mục sản phẩm">
-            <h2 class="home-category-heading">CATEGORY</h2>
+            <h2 class="home-category-heading"><span class="heading-eyebrow">our</span>CATEGORY</h2>
             <div class="home-category-grid">
                 <?php if (empty($displayCategories)): ?>
                     <article class="home-category-card home-category-card--empty">
@@ -114,7 +94,23 @@ $newsPosts = homeGetNewsPosts($conn, 2);
                 <?php endif; ?>
             </div>
         </section>
-    </div>
+
+        <section class="home-about" aria-label="Về chúng tôi">
+        <div class="home-about-grid">
+            <div class="home-about-media">
+                <img
+                    src="assets/images/index-about.webp"
+                    alt="Không gian trưng bày Winsum Home Decor"
+                    loading="lazy"
+                >
+            </div>
+            <div class="home-about-copy">
+                <h2>VỀ CHÚNG TÔI</h2>
+                <p>Tại Winsum Home Decor, chúng tôi tin rằng đèn không chỉ là công cụ chiếu sáng, mà còn là yếu tố quan trọng tạo nên không gian sống đầy cảm hứng. Chúng tôi chuyên cung cấp các mẫu đèn trang trí cao cấp – tinh tế trong thiết kế, chất lượng trong từng chi tiết – mang đến sự ấm áp, hiện đại và gu thẩm mỹ riêng cho từng ngôi nhà. Winsum tự hào là người bạn đồng hành cùng bạn trong hành trình ánh sáng.</p>
+                <a class="home-about-link" href="<?php echo e(app_url('blog')); ?>">Xem chi tiết &gt;</a>
+            </div>
+        </div>
+    </section>
 
     <section class="home-section container home-bestsellers">
         <div class="section-head">
@@ -150,28 +146,72 @@ $newsPosts = homeGetNewsPosts($conn, 2);
         </div>
     </section>
 
+    <section class="home-section container home-gallery" aria-label="Không gian cảm hứng">
+        <h2 class="home-category-heading"><span class="heading-eyebrow">follow</span>INSTAGRAM</h2>
+        <div class="home-gallery-row1">
+            <a class="home-gallery-item" href="https://www.instagram.com/winsum.homedecor/?hl=en" target="_blank" rel="noopener" aria-label="Xem Instagram Winsum Home">
+                <img src="assets/images/vintage.webp" alt="Góc decor phong cách vintage" loading="lazy">
+                <span class="home-gallery-item__overlay" aria-hidden="true">Instagram</span>
+            </a>
+            <a class="home-gallery-item" href="https://www.instagram.com/winsum.homedecor/?hl=en" target="_blank" rel="noopener" aria-label="Xem Instagram Winsum Home">
+                <img src="assets/images/index-c2.webp" alt="Đèn tường trang trí" loading="lazy">
+                <span class="home-gallery-item__overlay" aria-hidden="true">Instagram</span>
+            </a>
+            <a class="home-gallery-item" href="https://www.instagram.com/winsum.homedecor/?hl=en" target="_blank" rel="noopener" aria-label="Xem Instagram Winsum Home">
+                <img src="assets/images/index-c3.webp" alt="Đèn bàn trong không gian làm việc" loading="lazy">
+                <span class="home-gallery-item__overlay" aria-hidden="true">Instagram</span>
+            </a>
+            <a class="home-gallery-item" href="https://www.instagram.com/winsum.homedecor/?hl=en" target="_blank" rel="noopener" aria-label="Xem Instagram Winsum Home">
+                <img src="assets/images/index-banner2.webp" alt="Đèn thả trong không gian hiện đại" loading="lazy">
+                <span class="home-gallery-item__overlay" aria-hidden="true">Instagram</span>
+            </a>
+            <a class="home-gallery-item" href="https://www.instagram.com/winsum.homedecor/?hl=en" target="_blank" rel="noopener" aria-label="Xem Instagram Winsum Home">
+                <img src="assets/images/index-blog3.webp" alt="Không gian phòng khách ấm áp" loading="lazy">
+                <span class="home-gallery-item__overlay" aria-hidden="true">Instagram</span>
+            </a>
+        </div>
+        <div class="home-gallery-row2">
+            <a class="home-gallery-card" href="<?php echo e(app_url('catalog')); ?>">
+                <img src="assets/images/blog_1.png" alt="Không gian home decor" loading="lazy">
+                <span class="home-gallery-card__label">Home Decor<small>Winsum</small></span>
+            </a>
+            <a class="home-gallery-card" href="<?php echo e(app_url('catalog')); ?>">
+                <img src="assets/images/blog_2.png" alt="Không gian homestay" loading="lazy">
+                <span class="home-gallery-card__label">Homestay<small>Winsum</small></span>
+            </a>
+            <a class="home-gallery-card" href="<?php echo e(app_url('catalog')); ?>">
+                <img src="assets/images/blog_3.png" alt="Không gian quán cà phê" loading="lazy">
+                <span class="home-gallery-card__label">Coffee Shop<small>Winsum</small></span>
+            </a>
+            <a class="home-gallery-card" href="<?php echo e(app_url('catalog')); ?>">
+                <img src="assets/images/index-banner1.jpg" alt="Chiếu sáng ngoài trời" loading="lazy">
+                <span class="home-gallery-card__label">Out Door<small>Winsum</small></span>
+            </a>
+        </div>
+    </section>
+
     <section class="home-section home-news container">
-        <div class="section-head">
-            <h2>Our Blog</h2>
-            <a href="<?php echo e(app_url('blog')); ?>">Đến trang blog</a>
+        <div class="section-head section-head--stacked">
+            <h2><span class="heading-eyebrow">our</span>BLOG</h2>
+            <a href="<?php echo e(app_url('blog')); ?>">Xem tất cả</a>
         </div>
         <div class="news-grid">
             <?php if (empty($newsPosts)): ?>
-                <article class="news-card placeholder-card"><div><h3>Chưa có bài viết</h3></div></article>
+                <article class="news-card placeholder-card"><div class="news-card__body"><h3>Chưa có bài viết</h3></div></article>
             <?php else: ?>
                 <?php foreach ($newsPosts as $post): ?>
-                    <article class="news-card">
-                        <a href="<?php echo e(app_url('post', ['slug' => $post['slug']])); ?>">
-                            <img src="<?php echo htmlspecialchars($post['image']); ?>" alt="<?php echo htmlspecialchars($post['title']); ?>">
+                    <article class="news-card news-card--overlay">
+                        <a class="news-card__media" href="<?php echo e(app_url('post', ['slug' => $post['slug']])); ?>" aria-label="<?php echo htmlspecialchars($post['title']); ?>">
+                            <img src="<?php echo htmlspecialchars($post['image']); ?>" alt="<?php echo htmlspecialchars($post['title']); ?>" loading="lazy">
+                            <span class="news-card__overlay">
+                                <h3><?php echo htmlspecialchars($post['title']); ?></h3>
+                                <span class="news-card__cta">Xem ngay</span>
+                            </span>
                         </a>
-                        <div>
-                            <h3><a href="<?php echo e(app_url('post', ['slug' => $post['slug']])); ?>"><?php echo htmlspecialchars($post['title']); ?></a></h3>
-                            <p><?php echo htmlspecialchars($post['excerpt']); ?></p>
-                            <a class="read-more" href="<?php echo e(app_url('post', ['slug' => $post['slug']])); ?>">Xem ngay</a>
-                        </div>
                     </article>
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>
     </section>
+    </div>
 </section>

@@ -362,10 +362,10 @@
 }
 
 .blog-editor-form {
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--color-border, #e5e7eb);
     border-radius: 6px;
     padding: 16px;
-    background: #ffffff;
+    background: var(--color-surface, #ffffff);
 }
 
 .editor-grid {
@@ -398,8 +398,9 @@
 }
 
 .editor-toolbar button {
-    border: 1px solid #d1d5db;
-    background: #ffffff;
+    border: 1px solid var(--color-border-strong, #d1d5db);
+    background: var(--color-surface, #ffffff);
+    color: var(--color-text, #12151a);
     border-radius: 6px;
     min-width: 40px;
     height: 34px;
@@ -429,8 +430,8 @@
 
 .post-not-found {
     text-align: center;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
+    background: var(--color-surface, #ffffff);
+    border: 1px solid var(--color-border, #e5e7eb);
     border-radius: 12px;
     padding: 34px;
 }
@@ -575,8 +576,8 @@
 }
 
 .related-posts .blog-list .blog-card {
-    border: 1px solid #e5e7eb;
-    background: #ffffff;
+    border: 1px solid var(--color-border, #e5e7eb);
+    background: var(--color-surface, #ffffff);
     padding: 12px;
 }
 
