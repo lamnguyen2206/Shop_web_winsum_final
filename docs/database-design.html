@@ -124,20 +124,19 @@ Hệ quản trị cơ sở dữ liệu: MySQL 8.x &nbsp;|&nbsp; Tên CSDL: <code
 
 <p>Hệ thống Winsum Home sử dụng mô hình quan hệ (RDBMS) với MySQL. Ứng dụng PHP truy cập CSDL qua lớp <strong>Repository</strong> (<code>includes/*-repository.php</code>). Dữ liệu được tổ chức theo các nhóm nghiệp vụ chính của website thương mại điện tử.</p>
 
-<p>Báo cáo này mô tả <strong>24 bảng thực sự được sử dụng</strong> trong phiên bản đồ án hiện tại, bao gồm 22 bảng trong file schema <code>winsumwebfinal (2).sql</code> và 2 bảng được tạo tự động khi chạy ứng dụng (<code>blog_comments</code>, <code>order_return_requests</code>). Các bảng thiết kế sẵn nhưng chưa tích hợp code được liệt kê riêng ở mục VI.</p>
+<p>Báo cáo này mô tả <strong>21 bảng</strong> trong file schema <code>winsumwebfinal (9).sql</code>, đồng bộ với code PHP hiện tại. Giỏ hàng lưu session; hero trang chủ hard-code (không dùng bảng <code>banners</code>).</p>
 
 <h4>Phân nhóm bảng theo nghiệp vụ</h4>
 <ul class="module-list">
   <li><strong>Người dùng:</strong> customers</li>
   <li><strong>Danh mục &amp; sản phẩm:</strong> categories, brands, products, product_images</li>
   <li><strong>Tồn kho:</strong> warehouses, inventory_items, inventory_alerts</li>
-  <li><strong>Đơn hàng:</strong> orders, order_items, order_payments, order_shipments, order_status_histories</li>
+  <li><strong>Đơn hàng:</strong> orders, order_items, order_payments, order_shipments</li>
   <li><strong>Hoàn hàng:</strong> order_return_requests</li>
   <li><strong>Khuyến mãi:</strong> coupons, coupon_redemptions</li>
   <li><strong>Thanh toán &amp; vận chuyển:</strong> payment_methods, shipping_methods</li>
   <li><strong>Đánh giá:</strong> product_reviews</li>
   <li><strong>Blog:</strong> blog_categories, blog_posts, blog_comments</li>
-  <li><strong>Giao diện:</strong> banners</li>
 </ul>
 
 <!-- ═══════════════════════════════════════════════ -->
@@ -409,20 +408,7 @@ BANNER (<u>id</u>, title, subtitle, image_url, link_url, position, sort_order, i
 <tr><td>9</td><td>status</td><td>ENUM</td><td>DEFAULT 'pending'</td><td>pending / shipping / delivered…</td></tr>
 </table>
 
-<h4>Bảng 15: LICHSUDON (order_status_histories)</h4>
-<p>Ghi lại mọi thay đổi trạng thái đơn hàng và thanh toán (audit trail).</p>
-<table>
-<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
-<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID</td></tr>
-<tr><td>2</td><td>order_id</td><td>BIGINT</td><td>FK → orders.id</td><td>Đơn hàng</td></tr>
-<tr><td>3</td><td>from_status</td><td>VARCHAR(30)</td><td>NULL</td><td>Trạng thái cũ</td></tr>
-<tr><td>4</td><td>to_status</td><td>VARCHAR(30)</td><td>NOT NULL</td><td>Trạng thái mới</td></tr>
-<tr><td>5</td><td>note</td><td>TEXT</td><td>NULL</td><td>Ghi chú</td></tr>
-<tr><td>6</td><td>changed_by</td><td>VARCHAR(120)</td><td>NULL</td><td>customer / admin</td></tr>
-<tr><td>7</td><td>created_at</td><td>TIMESTAMP</td><td>NOT NULL</td><td>Thời điểm</td></tr>
-</table>
-
-<h4>Bảng 16: YEUCAUHOAN (order_return_requests)</h4>
+<h4>Bảng 15: YEUCAUHOAN (order_return_requests)</h4>
 <p>Bảng tạo tự động bởi <code>return-repository.php</code>. Quản lý quy trình hoàn hàng 4 giai đoạn: pending → accepted → goods_received → completed (hoặc rejected).</p>
 <table>
 <tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
@@ -488,7 +474,7 @@ BANNER (<u>id</u>, title, subtitle, image_url, link_url, position, sort_order, i
 <tr><td>8</td><td>status</td><td>ENUM</td><td>DEFAULT 'pending'</td><td>pending / approved / rejected</td></tr>
 </table>
 
-<h3 class="page-break">G. Nhóm blog &amp; giao diện</h3>
+<h3 class="page-break">G. Nhóm blog</h3>
 
 <h4>Bảng 20: DMBLOG (blog_categories)</h4>
 <table>
@@ -530,21 +516,6 @@ BANNER (<u>id</u>, title, subtitle, image_url, link_url, position, sort_order, i
 <tr><td>8</td><td>created_at</td><td>TIMESTAMP</td><td>NOT NULL</td><td>Thời điểm gửi</td></tr>
 </table>
 
-<h4>Bảng 23: BANNER (banners)</h4>
-<p>Banner hero trang chủ; lọc theo <code>position = 'home_hero'</code> và <code>is_active = 1</code>.</p>
-<table>
-<tr><th>STT</th><th>Tên trường</th><th>Kiểu dữ liệu</th><th>Ràng buộc</th><th>Mô tả</th></tr>
-<tr><td>1</td><td>id</td><td>BIGINT</td><td>PK</td><td>ID banner</td></tr>
-<tr><td>2</td><td>title</td><td>VARCHAR(160)</td><td>NOT NULL</td><td>Tiêu đề</td></tr>
-<tr><td>3</td><td>subtitle</td><td>VARCHAR(255)</td><td>NULL</td><td>Phụ đề</td></tr>
-<tr><td>4</td><td>image_url</td><td>VARCHAR(255)</td><td>NULL</td><td>Ảnh nền</td></tr>
-<tr><td>5</td><td>link_url</td><td>VARCHAR(255)</td><td>NULL</td><td>Liên kết khi click</td></tr>
-<tr><td>6</td><td>position</td><td>VARCHAR(60)</td><td>NOT NULL</td><td>Vị trí (home_hero…)</td></tr>
-<tr><td>7</td><td>sort_order</td><td>INT</td><td>DEFAULT 0</td><td>Thứ tự</td></tr>
-<tr><td>8</td><td>is_active</td><td>TINYINT(1)</td><td>DEFAULT 1</td><td>Kích hoạt</td></tr>
-<tr><td>9</td><td>starts_at / ends_at</td><td>DATETIME</td><td>NULL</td><td>Lịch hiển thị</td></tr>
-</table>
-
 <!-- ═══════════════════════════════════════════════ -->
 <h2 id="p4" class="page-break">IV. Bảng liên kết (Khóa chính – Khóa phụ)</h2>
 
@@ -575,7 +546,6 @@ BANNER (<u>id</u>, title, subtitle, image_url, link_url, position, sort_order, i
 <tr><td>order_payments</td><td>payment_method_id</td><td>payment_methods.id</td><td>1 PT TT – N TT</td></tr>
 <tr><td>order_shipments</td><td>order_id</td><td>orders.id</td><td>1 ĐH – N Vận chuyển</td></tr>
 <tr><td>order_shipments</td><td>shipping_method_id</td><td>shipping_methods.id</td><td>1 PT VC – N VC</td></tr>
-<tr><td>order_status_histories</td><td>order_id</td><td>orders.id</td><td>1 ĐH – N Lịch sử</td></tr>
 <tr><td>order_return_requests</td><td>order_id</td><td>orders.id</td><td>1 ĐH – N Yêu cầu hoàn</td></tr>
 <tr><td>coupon_redemptions</td><td>coupon_id</td><td>coupons.id</td><td>1 MGG – N Lượt dùng</td></tr>
 <tr><td>coupon_redemptions</td><td>customer_id</td><td>customers.id</td><td>1 KH – N Lượt dùng</td></tr>
@@ -607,8 +577,8 @@ BANNER (<u>id</u>, title, subtitle, image_url, link_url, position, sort_order, i
 <p>Sơ đồ ERD được tạo trong file <strong><code>docs/er-diagrams.html</code></strong>, chia thành 3 nhóm để dễ đọc trong báo cáo:</p>
 <ul>
   <li><strong>Hình 1 – Sản phẩm &amp; tồn kho:</strong> categories, brands, products, product_images, warehouses, inventory_items, inventory_alerts</li>
-  <li><strong>Hình 2 – Đơn hàng &amp; thanh toán:</strong> customers, orders, order_items, coupons, coupon_redemptions, payment_methods, order_payments, shipping_methods, order_shipments, order_status_histories, order_return_requests</li>
-  <li><strong>Hình 3 – Blog &amp; nội dung:</strong> blog_categories, blog_posts, blog_comments, product_reviews, banners</li>
+  <li><strong>Hình 2 – Đơn hàng &amp; thanh toán:</strong> customers, orders, order_items, coupons, coupon_redemptions, payment_methods, order_payments, shipping_methods, order_shipments, order_return_requests</li>
+  <li><strong>Hình 3 – Blog &amp; nội dung:</strong> blog_categories, blog_posts, blog_comments, product_reviews</li>
 </ul>
 <p class="note">Khi in báo cáo Word/PDF: mở <code>er-diagrams.html</code> trên trình duyệt → in hoặc chụp ảnh từng sơ đồ Mermaid để chèn vào mục Phụ lục.</p>
 

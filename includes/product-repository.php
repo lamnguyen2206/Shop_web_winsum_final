@@ -83,15 +83,6 @@ function productGetCatalogCategories(mysqli $conn): array
     return $categories;
 }
 
-/** Chỉ các danh mục loại đèn (slug bắt đầu bằng den-). */
-function productGetLampCategories(mysqli $conn): array
-{
-    return array_values(array_filter(
-        productGetCatalogCategories($conn),
-        static fn(array $cat): bool => str_starts_with($cat['slug'], 'den-')
-    ));
-}
-
 /** Tên hiển thị menu (title case) theo slug danh mục. */
 function productCategoryNavLabel(string $slug, string $fallbackName): string
 {
@@ -128,76 +119,12 @@ function productGetNavMenuCategories(mysqli $conn): array
     return $items;
 }
 
-function productGetFilterBrands(mysqli $conn): array
-{
-    $result = $conn->query("SELECT id, name, slug FROM brands WHERE is_active = 1 ORDER BY name ASC");
-    if (!$result) {
-        return [];
-    }
-
-    $brands = [];
-    while ($row = $result->fetch_assoc()) {
-        $brands[] = $row;
-    }
-    return $brands;
-}
-
-function productGetFilterMaterialOptions(mysqli $conn): array
-{
-    $result = $conn->query("SELECT DISTINCT material
-                            FROM products
-                            WHERE is_active = 1
-                              AND material IS NOT NULL
-                              AND material <> ''
-                            ORDER BY material ASC");
-    if (!$result) {
-        return [];
-    }
-
-    $items = [];
-    while ($row = $result->fetch_assoc()) {
-        $items[] = $row['material'];
-    }
-    return $items;
-}
-
-function productGetFilterColorOptions(mysqli $conn): array
-{
-    $result = $conn->query("SELECT DISTINCT color
-                            FROM products
-                            WHERE is_active = 1
-                              AND color IS NOT NULL
-                              AND color <> ''
-                            ORDER BY color ASC");
-    if (!$result) {
-        return [];
-    }
-
-    $items = [];
-    while ($row = $result->fetch_assoc()) {
-        $items[] = $row['color'];
-    }
-    return $items;
-}
-
-function productGetAvailablePriceRange(mysqli $conn): array
-{
-    $result = $conn->query("SELECT MIN(base_price) AS min_price, MAX(base_price) AS max_price FROM products WHERE is_active = 1");
-    $row = $result ? $result->fetch_assoc() : null;
-    $min = isset($row['min_price']) ? (float) $row['min_price'] : 0;
-    $max = isset($row['max_price']) ? (float) $row['max_price'] : 0;
-    return ['min' => $min, 'max' => $max];
-}
-
 function productBuildFiltersFromRequest(): array
 {
     return [
         'q' => trim((string) ($_GET['q'] ?? '')),
         'category' => trim((string) ($_GET['category'] ?? '')),
-        'brand' => trim((string) ($_GET['brand'] ?? '')),
-        'material' => trim((string) ($_GET['material'] ?? '')),
         'color' => trim((string) ($_GET['color'] ?? '')),
-        'stock' => trim((string) ($_GET['stock'] ?? '')),
         'min_price' => (float) ($_GET['min_price'] ?? 0),
         'max_price' => (float) ($_GET['max_price'] ?? 0),
         'sort' => trim((string) ($_GET['sort'] ?? 'featured')),
@@ -247,12 +174,6 @@ function productBuildSearchConditions(array $filters): array
         $params[] = $filters['category'];
     }
 
-    if ($filters['stock'] !== '' && in_array($filters['stock'], ['in_stock', 'out_of_stock', 'preorder'], true)) {
-        $where[] = "p.stock_status = ?";
-        $types .= 's';
-        $params[] = $filters['stock'];
-    }
-
     if ($filters['min_price'] > 0) {
         $where[] = "p.base_price >= ?";
         $types .= 'd';
@@ -263,18 +184,6 @@ function productBuildSearchConditions(array $filters): array
         $where[] = "p.base_price <= ?";
         $types .= 'd';
         $params[] = $filters['max_price'];
-    }
-
-    if ($filters['brand'] !== '') {
-        $where[] = "b.slug = ?";
-        $types .= 's';
-        $params[] = $filters['brand'];
-    }
-
-    if ($filters['material'] !== '') {
-        $where[] = "p.material = ?";
-        $types .= 's';
-        $params[] = $filters['material'];
     }
 
     if ($filters['color'] !== '') {

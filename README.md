@@ -11,22 +11,21 @@ Website bán hàng nội thất và thiết bị chiếu sáng — PHP thuần +
 
 ## 2. Cài đặt nhanh
 
-1. Đặt project vào `C:\xampp\htdocs\winsumweb`
+1. Đặt project vào `C:\xampp\htdocs\webwinsum`
 2. Tạo database (gợi ý tên): `winsumwebfinal`
 3. Import dữ liệu:
 
 ```bash
-mysql -u root -p winsumwebfinal < "winsumwebfinal (2).sql"
+mysql -u root winsumwebfinal < "winsumwebfinal (9).sql"
 ```
+
 
 4. Chỉnh kết nối DB trong `config/database.php` (`$host`, `$db`, `$user`, `$pass`)
 5. Mở trình duyệt:
 
 ```
-http://localhost/winsumweb/index.php
+http://localhost/webwinsum/index.php
 ```
-
-> Lưu ý: hệ thống có một số hàm "ensure schema" tự bổ sung cột/bảng cho DB cũ khi chạy code mới.
 
 ## 3. Tài khoản demo
 
@@ -40,8 +39,8 @@ http://localhost/winsumweb/index.php
 
 ### Khách hàng (Storefront)
 
-- **Trang chủ**: banner, sản phẩm nổi bật, bài viết mới
-- **Danh mục sản phẩm**: lọc theo danh mục / thương hiệu / giá / tình trạng, tìm kiếm, sắp xếp, phân trang
+- **Trang chủ**: hero cố định, voucher, sản phẩm chủ lực, bài viết mới
+- **Danh mục sản phẩm**: lọc theo danh mục / màu / giá, tìm kiếm, sắp xếp, phân trang
 - **Chi tiết sản phẩm**: gallery ảnh, mô tả, thông số kỹ thuật, đánh giá sao
 - **Giỏ hàng**: thêm / sửa / xóa sản phẩm, áp mã giảm giá
 - **Thanh toán**: COD hoặc VietQR demo; không cho xác nhận thanh toán với đơn đã hủy / hoàn trả

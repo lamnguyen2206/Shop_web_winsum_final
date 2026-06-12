@@ -263,15 +263,6 @@ function orderCreateFromCheckout(
         $stmtPayment->execute();
         $stmtPayment->close();
 
-        $stmtHistory = $conn->prepare("INSERT INTO order_status_histories
-            (order_id, from_status, to_status, note, changed_by)
-            VALUES (?, NULL, 'pending', 'Đơn hàng mới tạo từ storefront', 'customer')");
-        if ($stmtHistory) {
-            $stmtHistory->bind_param('i', $orderId);
-            $stmtHistory->execute();
-            $stmtHistory->close();
-        }
-
         if ($couponIdValue) {
             require_once __DIR__ . '/coupon-repository.php';
             couponRecordRedemption($conn, (int) $couponIdValue, $customerId, $orderId);
@@ -415,15 +406,6 @@ function orderSetPaymentStatusInTransaction(mysqli $conn, int $orderId, string $
             $stmtPaid->execute();
             $stmtPaid->close();
         }
-    }
-
-    $stmtHistory = $conn->prepare("INSERT INTO order_status_histories (order_id, from_status, to_status, note, changed_by)
-                                   VALUES (?, NULL, ?, ?, ?)");
-    if ($stmtHistory) {
-        $note = 'Cập nhật thanh toán: ' . $newStatus;
-        $stmtHistory->bind_param('isss', $orderId, $newStatus, $note, $changedBy);
-        $stmtHistory->execute();
-        $stmtHistory->close();
     }
 }
 
@@ -745,14 +727,6 @@ function orderApplyStatusUpdate(mysqli $conn, int $orderId, string $newStatus, s
     $stmt->execute();
     $stmt->close();
 
-    $stmtHistory = $conn->prepare("INSERT INTO order_status_histories (order_id, from_status, to_status, note, changed_by)
-                                   VALUES (?, ?, ?, 'Cập nhật trạng thái đơn từ quản trị', ?)");
-    if ($stmtHistory) {
-        $stmtHistory->bind_param('isss', $orderId, $fromStatus, $newStatus, $changedBy);
-        $stmtHistory->execute();
-        $stmtHistory->close();
-    }
-
     if ($newStatus === 'delivered') {
         orderMarkDeliveredSideEffects($conn, $orderId);
     }
@@ -859,15 +833,6 @@ function orderUpdatePaymentStatus(mysqli $conn, int $orderId, string $newStatus,
             }
         }
 
-        $stmtHistory = $conn->prepare("INSERT INTO order_status_histories (order_id, from_status, to_status, note, changed_by)
-                                       VALUES (?, NULL, ?, ?, ?)");
-        if ($stmtHistory) {
-            $note = 'Cập nhật thanh toán: ' . $newStatus;
-            $stmtHistory->bind_param('isss', $orderId, $newStatus, $note, $changedBy);
-            $stmtHistory->execute();
-            $stmtHistory->close();
-        }
-
         $conn->commit();
         return true;
     } catch (Throwable $e) {
@@ -925,14 +890,6 @@ function orderUpdateFulfillmentStatus(mysqli $conn, int $orderId, string $newSta
         $stmt->bind_param('ssi', $nextOrderStatus, $newStatus, $orderId);
         $stmt->execute();
         $stmt->close();
-
-        $stmtHistory = $conn->prepare("INSERT INTO order_status_histories (order_id, from_status, to_status, note, changed_by)
-                                       VALUES (?, ?, ?, 'Cập nhật giao hàng từ quản trị', ?)");
-        if ($stmtHistory) {
-            $stmtHistory->bind_param('isss', $orderId, $fromStatus, $newStatus, $changedBy);
-            $stmtHistory->execute();
-            $stmtHistory->close();
-        }
 
         if ($newStatus === 'cancelled') {
             orderMaybeRestockInventory($conn, $orderId);

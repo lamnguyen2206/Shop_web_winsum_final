@@ -152,16 +152,6 @@ TABLES = [
         ],
     },
     {
-        "title": "Bảng 13: order_status_histories — Lịch sử trạng thái đơn",
-        "purpose": "Ghi log mỗi lần thay đổi trạng thái đơn hàng.",
-        "fields": [
-            ("id", "BIGINT", "PK, AI", "Mã bản ghi"),
-            ("order_id", "BIGINT", "FK, NOT NULL", "Đơn hàng"),
-            ("to_status", "VARCHAR(30)", "NOT NULL", "Trạng thái chuyển đến"),
-            ("changed_by", "VARCHAR(120)", "—", "customer / admin / vietqr_demo"),
-        ],
-    },
-    {
         "title": "Bảng 14: order_return_requests — Yêu cầu hoàn hàng",
         "purpose": "Khách gửi yêu cầu hoàn trong 7 ngày sau giao hàng.",
         "fields": [
@@ -260,15 +250,6 @@ TABLES = [
             ("content", "TEXT", "NOT NULL", "Nội dung bình luận"),
         ],
     },
-    {
-        "title": "Bảng 23: banners — Banner trang chủ",
-        "purpose": "Slider / banner quảng cáo trang chủ.",
-        "fields": [
-            ("id", "BIGINT", "PK, AI", "Mã banner"),
-            ("title", "VARCHAR(160)", "NOT NULL", "Tiêu đề banner"),
-            ("position", "VARCHAR(60)", "NOT NULL", "Vị trí hiển thị trên trang"),
-        ],
-    },
 ]
 
 FK_ROWS = [
@@ -280,7 +261,6 @@ FK_ROWS = [
     ("order_items", "order_id", "orders", "N dòng → 1 đơn"),
     ("order_payments", "order_id, payment_method_id", "orders, payment_methods", "TT theo đơn"),
     ("order_shipments", "order_id, shipping_method_id", "orders, shipping_methods", "Ship theo đơn"),
-    ("order_status_histories", "order_id", "orders", "N log → 1 đơn"),
     ("order_return_requests", "order_id", "orders", "N yêu cầu → 1 đơn"),
     ("coupon_redemptions", "coupon_id", "coupons", "N lượt → 1 mã"),
     ("product_reviews", "product_id", "products", "N đánh giá → 1 SP"),
@@ -376,7 +356,7 @@ def build_document() -> Document:
     meta = doc.add_paragraph()
     meta.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r = meta.add_run(
-        "CSDL: winsumwebfinal | MySQL/MariaDB | InnoDB | utf8mb4 | 23 bảng\n"
+        "CSDL: winsumwebfinal | MySQL/MariaDB | InnoDB | utf8mb4 | 21 bảng\n"
         "Nguồn schema: winsumwebfinal (8).sql"
     )
     r.font.size = Pt(12)

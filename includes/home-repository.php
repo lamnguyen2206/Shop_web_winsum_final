@@ -7,16 +7,6 @@ function homeFormatCurrency(float $amount): string
     return number_format($amount, 0, ',', '.') . 'đ';
 }
 
-function homeGetFeaturedCategories(mysqli $conn, ?int $limit = null): array
-{
-    require_once __DIR__ . '/product-repository.php';
-    $categories = productGetLampCategories($conn);
-    if ($limit !== null && $limit > 0) {
-        $categories = array_slice($categories, 0, $limit);
-    }
-    return $categories;
-}
-
 /** Danh mục trang chủ (6 loại, thứ tự cố định gồm kệ trang trí). */
 function homeGetDisplayCategories(mysqli $conn): array
 {
