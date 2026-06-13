@@ -27,14 +27,25 @@ function orderEnsureSchema(mysqli $conn): void
     }
 
     $conn->query("UPDATE orders
+                  SET status = 'shipped', fulfillment_status = 'shipped'
+                  WHERE status IN ('pending', 'processing', 'packed')");
+
+    $conn->query("UPDATE orders
+                  SET fulfillment_status = 'shipped'
+                  WHERE fulfillment_status IN ('pending', 'processing', 'packed')
+                    AND status NOT IN ('cancelled', 'returned', 'delivered')");
+
+    $conn->query("UPDATE orders
                   SET fulfillment_status = CASE
-                      WHEN status = 'shipped' THEN 'shipped'
+                      WHEN status IN ('cancelled', 'returned') THEN status
                       WHEN status = 'delivered' THEN 'delivered'
-                      WHEN status IN ('cancelled', 'returned') THEN 'cancelled'
-                      WHEN status IN ('processing', 'packed') THEN 'processing'
-                      ELSE 'pending'
+                      ELSE 'shipped'
                   END
                   WHERE fulfillment_status IS NULL OR fulfillment_status = ''");
+
+    $conn->query("UPDATE order_shipments
+                  SET status = 'shipped', shipped_at = COALESCE(shipped_at, NOW())
+                  WHERE status IN ('pending', 'processing', 'packed')");
 }
 
 function orderGetShippingMethods(mysqli $conn): array
@@ -606,7 +617,7 @@ function orderCanCustomerCancel(array $order): bool
         return false;
     }
 
-    return in_array($status, ['pending', 'processing', 'packed', 'shipped'], true);
+    return $status === 'shipped';
 }
 
 /**
@@ -705,12 +716,10 @@ function orderApplyStatusUpdate(mysqli $conn, int $orderId, string $newStatus, s
         $fulfillment = 'returned';
     } elseif (in_array($newStatus, ['return_pending', 'return_accepted', 'return_received'], true)) {
         $fulfillment = 'delivered';
-    } elseif (in_array($newStatus, ['shipped', 'delivered'], true)) {
-        $fulfillment = $newStatus === 'delivered' ? 'delivered' : 'shipped';
-    } elseif (in_array($newStatus, ['processing', 'packed'], true)) {
-        $fulfillment = 'processing';
-    } elseif ($newStatus === 'pending') {
-        $fulfillment = 'pending';
+    } elseif ($newStatus === 'delivered') {
+        $fulfillment = 'delivered';
+    } elseif ($newStatus === 'shipped') {
+        $fulfillment = 'shipped';
     }
 
     $stmt = $conn->prepare('UPDATE orders SET status = ?, fulfillment_status = ?, updated_at = NOW() WHERE id = ?');
@@ -739,7 +748,7 @@ function orderApplyStatusUpdate(mysqli $conn, int $orderId, string $newStatus, s
 
 function orderUpdateStatus(mysqli $conn, int $orderId, string $newStatus, string $changedBy = 'admin'): bool
 {
-    $allowed = ['pending', 'processing', 'packed', 'shipped', 'delivered', 'cancelled', 'returned',
+    $allowed = ['shipped', 'delivered', 'cancelled', 'returned',
         'return_pending', 'return_accepted', 'return_received'];
     if (!in_array($newStatus, $allowed, true)) {
         return false;
@@ -837,7 +846,7 @@ function orderUpdatePaymentStatus(mysqli $conn, int $orderId, string $newStatus,
 
 function orderUpdateFulfillmentStatus(mysqli $conn, int $orderId, string $newStatus, string $changedBy = 'admin'): bool
 {
-    $allowed = ['pending', 'shipping', 'shipped', 'delivered', 'cancelled'];
+    $allowed = ['shipped', 'delivered', 'cancelled'];
     if (!in_array($newStatus, $allowed, true)) {
         return false;
     }
@@ -853,27 +862,19 @@ function orderUpdateFulfillmentStatus(mysqli $conn, int $orderId, string $newSta
     if (!$current) {
         return false;
     }
-    if ($newStatus === 'shipping') {
-        $newStatus = 'shipped';
-    }
 
     $orderStatus = (string) $current['status'];
     $fromStatus = (string) $current['fulfillment_status'];
     if (orderFulfillmentBlocksAdminChange($current) && $newStatus !== $fromStatus) {
         return false;
     }
-    if ($fromStatus === 'shipped' && $newStatus === 'pending') {
-        return false;
-    }
 
     $conn->begin_transaction();
     try {
         $nextOrderStatus = match ($newStatus) {
-            'pending' => 'pending',
             'shipped' => 'shipped',
             'delivered' => 'delivered',
             'cancelled' => 'cancelled',
-            'returned' => 'returned',
             default => $orderStatus,
         };
 
@@ -904,9 +905,6 @@ function orderUpdateFulfillmentStatus(mysqli $conn, int $orderId, string $newSta
 function orderStatusLabel(string $status): string
 {
     return match ($status) {
-        'pending' => 'Chờ xử lý',
-        'processing' => 'Đang xử lý',
-        'packed' => 'Đã đóng gói',
         'shipped' => 'Đang giao hàng',
         'delivered' => 'Đã giao hàng',
         'cancelled' => 'Đã hủy',
@@ -914,7 +912,7 @@ function orderStatusLabel(string $status): string
         'return_accepted' => 'Chờ khách trả hàng',
         'return_received' => 'Đã nhận hàng hoàn — chờ hoàn tiền',
         'returned' => 'Hoàn hàng thành công',
-        default => $status,
+        default => 'Đang giao hàng',
     };
 }
 
@@ -932,13 +930,11 @@ function orderPaymentStatusLabel(string $status): string
 function orderFulfillmentStatusLabel(string $status): string
 {
     return match ($status) {
-        'pending' => 'Chờ giao hàng',
-        'processing', 'packed' => 'Đang chuẩn bị',
-        'shipping', 'shipped' => 'Đang giao hàng',
+        'shipped' => 'Đang giao hàng',
         'delivered' => 'Đã giao hàng',
         'cancelled' => 'Đã hủy giao',
         'returned' => 'Đã hoàn trả',
-        default => $status,
+        default => 'Đang giao hàng',
     };
 }
 
@@ -947,14 +943,13 @@ function orderShippingStatusOptions(): array
     return ['shipped', 'delivered'];
 }
 
-/** Chuẩn hóa fulfillment DB cũ sang nhóm trạng thái giao hàng admin. */
+/** Chuẩn hóa fulfillment sang nhóm trạng thái giao hàng admin. */
 function orderFulfillmentToShippingKey(string $fulfillment): string
 {
     return match ($fulfillment) {
-        'shipping', 'shipped', 'processing', 'packed' => 'shipped',
         'delivered' => 'delivered',
         'cancelled', 'returned' => 'cancelled',
-        default => 'pending',
+        default => 'shipped',
     };
 }
 

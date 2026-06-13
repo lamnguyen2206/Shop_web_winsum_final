@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$statusOptions = ['pending', 'processing', 'packed', 'shipped', 'delivered', 'cancelled'];
+$statusOptions = ['shipped', 'delivered', 'cancelled'];
 ?>
 
 <section class="container orders-page admin-page admin-orders-page">
