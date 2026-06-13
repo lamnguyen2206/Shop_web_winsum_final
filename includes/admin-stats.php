@@ -21,7 +21,7 @@ function adminGetDashboardStats(mysqli $conn): array
 
     $queries = [
         'orders_total' => "SELECT COUNT(*) AS c FROM orders",
-        'orders_pending' => "SELECT COUNT(*) AS c FROM orders WHERE status = 'pending'",
+        'orders_pending' => "SELECT COUNT(*) AS c FROM orders WHERE status IN ('pending', 'processing', 'packed', 'shipped')",
         'products_total' => "SELECT COUNT(*) AS c FROM products",
         'products_active' => "SELECT COUNT(*) AS c FROM products WHERE is_active = 1",
         'customers_total' => "SELECT COUNT(*) AS c FROM customers",

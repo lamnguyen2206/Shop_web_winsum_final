@@ -21,7 +21,7 @@ $inventoryAlerts = inventoryGetUnreadAlerts($conn, 5);
         <article class="admin-stat-card">
             <span class="admin-stat-label">Tổng đơn hàng</span>
             <strong class="admin-stat-value"><?php echo (int) $stats['orders_total']; ?></strong>
-            <small><?php echo (int) $stats['orders_pending']; ?> đang chờ xử lý</small>
+            <small><?php echo (int) $stats['orders_pending']; ?> đơn đang giao</small>
         </article>
         <article class="admin-stat-card">
             <span class="admin-stat-label">Doanh thu thuần</span>

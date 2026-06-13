@@ -771,6 +771,22 @@
     margin-top: 2px;
 }
 
+.admin-order-detail-page .admin-btn-save:disabled {
+    background: #d1d5db;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+.admin-order-detail-page .admin-status-current {
+    margin: 0 0 8px;
+    font-size: 14px;
+    color: var(--color-text-muted, #4b5563);
+}
+
+.admin-order-detail-page .admin-status-current strong {
+    color: var(--color-accent, #2f5d3f);
+}
+
 .admin-order-detail-page .admin-order-items-heading {
     margin: 0 0 12px;
     font-size: 1.15rem;

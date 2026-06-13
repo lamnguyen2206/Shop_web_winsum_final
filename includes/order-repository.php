@@ -181,7 +181,7 @@ function orderCreateFromCheckout(
         $stmtOrder = $conn->prepare("INSERT INTO orders
             (order_code, customer_id, customer_name, customer_phone, customer_email, customer_address, customer_note,
              coupon_id, coupon_code, subtotal, shipping_fee, discount_amount, grand_total, status, fulfillment_status, payment_status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending', 'unpaid')");
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'shipped', 'shipped', 'unpaid')");
         if (!$stmtOrder) {
             throw new RuntimeException('Không tạo được lệnh lưu đơn hàng.');
         }
@@ -232,8 +232,8 @@ function orderCreateFromCheckout(
         $stmtItem->close();
 
         $stmtShipment = $conn->prepare("INSERT INTO order_shipments
-            (order_id, shipping_method_id, recipient_name, recipient_phone, recipient_address, shipping_fee, status)
-            VALUES (?, ?, ?, ?, ?, ?, 'pending')");
+            (order_id, shipping_method_id, recipient_name, recipient_phone, recipient_address, shipping_fee, status, shipped_at)
+            VALUES (?, ?, ?, ?, ?, ?, 'shipped', NOW())");
         if (!$stmtShipment) {
             throw new RuntimeException('Không tạo được lệnh vận chuyển.');
         }
@@ -592,27 +592,21 @@ function orderShouldRestockForStatus(string $status): bool
 }
 
 /**
- * Khách có thể hủy đơn khi chưa bàn giao.
+ * Khách hủy đơn được khi đơn chưa giao xong, chưa hủy, chưa trả.
  */
 function orderCanCustomerCancel(array $order): bool
 {
     $status = (string) ($order['status'] ?? '');
     $fulfillment = (string) ($order['fulfillment_status'] ?? '');
 
-    $canCancel = true;
-    $reason = 'allowed';
-    if (in_array($status, ['cancelled', 'returned', 'delivered', 'shipped', 'return_pending', 'return_accepted', 'return_received'], true)) {
-        $canCancel = false;
-        $reason = 'blocked_order_status';
-    } elseif (in_array($fulfillment, ['shipping', 'shipped', 'delivered', 'cancelled', 'returned'], true)) {
-        $canCancel = false;
-        $reason = 'blocked_fulfillment_status';
-    } else {
-        $canCancel = in_array($status, ['pending', 'processing'], true);
-        $reason = $canCancel ? 'allowed_pending_processing' : 'blocked_not_customer_cancellable';
+    if (in_array($status, ['cancelled', 'returned', 'delivered', 'return_pending', 'return_accepted', 'return_received'], true)) {
+        return false;
+    }
+    if (in_array($fulfillment, ['delivered', 'cancelled', 'returned'], true)) {
+        return false;
     }
 
-    return $canCancel;
+    return in_array($status, ['pending', 'processing', 'packed', 'shipped'], true);
 }
 
 /**
@@ -684,8 +678,8 @@ function orderStatusBlocksAdminChange(array $order): bool
     $status = (string) ($order['status'] ?? '');
     $fulfillment = (string) ($order['fulfillment_status'] ?? '');
 
-    return in_array($status, ['shipped', 'delivered', 'cancelled', 'returned', 'return_pending', 'return_accepted', 'return_received'], true)
-        || in_array($fulfillment, ['shipped', 'delivered', 'cancelled', 'returned'], true);
+    return in_array($status, ['delivered', 'cancelled', 'returned', 'return_pending', 'return_accepted', 'return_received'], true)
+        || in_array($fulfillment, ['delivered', 'cancelled', 'returned'], true);
 }
 
 function orderFulfillmentBlocksAdminChange(array $order): bool
@@ -697,7 +691,7 @@ function orderFulfillmentBlocksAdminChange(array $order): bool
         return true;
     }
 
-    return in_array($fulfillment, ['shipped', 'delivered', 'cancelled', 'returned'], true);
+    return in_array($fulfillment, ['delivered', 'cancelled', 'returned'], true);
 }
 
 function orderApplyStatusUpdate(mysqli $conn, int $orderId, string $newStatus, string $changedBy, array $current): bool
@@ -950,7 +944,7 @@ function orderFulfillmentStatusLabel(string $status): string
 
 function orderShippingStatusOptions(): array
 {
-    return ['pending', 'shipped', 'delivered', 'cancelled'];
+    return ['shipped', 'delivered'];
 }
 
 /** Chuẩn hóa fulfillment DB cũ sang nhóm trạng thái giao hàng admin. */

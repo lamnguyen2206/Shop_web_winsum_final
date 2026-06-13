@@ -7,7 +7,6 @@ $order = $orderCode !== '' ? orderGetOrderDetailByCode($conn, $orderCode) : null
 $adminMessage = trim((string) ($_GET['msg'] ?? ''));
 $adminMessageOk = isset($_GET['msg_ok']) ? $_GET['msg_ok'] === '1' : null;
 $paymentOptions = orderPaymentStatusOptions();
-$shippingOptions = orderShippingStatusOptions();
 $shippingKey = $order ? orderFulfillmentToShippingKey((string) $order['fulfillment_status']) : 'pending';
 $orderLocked = $order ? orderIsLocked($order) : false;
 ?>
@@ -100,15 +99,19 @@ $orderLocked = $order ? orderIsLocked($order) : false;
                 <?php echo csrfField(); ?>
                 <input type="hidden" name="action" value="update_fulfillment_status">
                 <input type="hidden" name="order_id" value="<?php echo (int) $order['id']; ?>">
+                <input type="hidden" name="fulfillment_status" value="delivered">
                 <h3>Trạng thái giao hàng</h3>
-                <select name="fulfillment_status" aria-label="Trạng thái giao hàng" <?php echo $orderLocked ? 'disabled' : ''; ?>>
-                    <?php foreach ($shippingOptions as $fs): ?>
-                        <option value="<?php echo htmlspecialchars($fs); ?>" <?php echo $shippingKey === $fs ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars(orderFulfillmentStatusLabel($fs)); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-                <button type="submit" class="admin-btn-save" <?php echo $orderLocked ? 'disabled' : ''; ?>>Lưu giao hàng</button>
+                <p class="admin-status-current">Hiện tại: <strong><?php echo htmlspecialchars(orderFulfillmentStatusLabel((string) $order['fulfillment_status'])); ?></strong></p>
+                <?php
+                $canMarkDelivered = !$orderLocked
+                    && !in_array($shippingKey, ['delivered'], true)
+                    && !in_array((string) $order['status'], ['delivered', 'return_pending', 'return_accepted', 'return_received'], true);
+                ?>
+                <?php if ($canMarkDelivered): ?>
+                    <button type="submit" class="admin-btn-save">Xác nhận đã giao</button>
+                <?php else: ?>
+                    <button type="button" class="admin-btn-save" disabled>Xác nhận đã giao</button>
+                <?php endif; ?>
             </form>
         </div>
 
