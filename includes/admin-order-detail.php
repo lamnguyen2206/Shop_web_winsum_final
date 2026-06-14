@@ -9,6 +9,8 @@ $adminMessageOk = isset($_GET['msg_ok']) ? $_GET['msg_ok'] === '1' : null;
 $paymentOptions = orderPaymentStatusOptions();
 $shippingKey = $order ? orderFulfillmentToShippingKey((string) $order['fulfillment_status']) : 'pending';
 $orderLocked = $order ? orderIsLocked($order) : false;
+$canEditPayment = $order ? orderAdminCanUpdatePaymentStatus($order) : false;
+$paymentMethodCode = $order ? (string) ($order['payment']['payment_method_code'] ?? '') : '';
 ?>
 
 <section class="container order-detail-page admin-page admin-order-detail-page">
@@ -80,20 +82,38 @@ $orderLocked = $order ? orderIsLocked($order) : false;
             <?php if ($orderLocked): ?>
                 <p class="admin-notice admin-notice--warning">Đơn hàng đã ở trạng thái cuối nên không thể chuyển lại sang trạng thái đang xử lý hoặc đang giao.</p>
             <?php endif; ?>
-            <form method="post" action="<?php echo e(app_url('admin-order-detail', ['code' => $order['order_code']])); ?>" class="admin-status-panel-form">
-                <?php echo csrfField(); ?>
-                <input type="hidden" name="action" value="update_payment_status">
-                <input type="hidden" name="order_id" value="<?php echo (int) $order['id']; ?>">
+            <div class="admin-status-panel-form">
                 <h3>Trạng thái thanh toán</h3>
-                <select name="payment_status" aria-label="Trạng thái thanh toán" <?php echo $orderLocked ? 'disabled' : ''; ?>>
-                    <?php foreach ($paymentOptions as $ps): ?>
-                        <option value="<?php echo htmlspecialchars($ps); ?>" <?php echo ($order['payment_status'] ?? '') === $ps ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars(orderPaymentStatusLabel($ps)); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-                <button type="submit" class="admin-btn-save" <?php echo $orderLocked ? 'disabled' : ''; ?>>Lưu thanh toán</button>
-            </form>
+                <p class="admin-status-current">Hiện tại: <strong><?php echo htmlspecialchars(orderPaymentStatusLabel((string) $order['payment_status'])); ?></strong></p>
+                <?php if ($canEditPayment): ?>
+                    <form method="post" action="<?php echo e(app_url('admin-order-detail', ['code' => $order['order_code']])); ?>" class="admin-status-panel-form-inner">
+                        <?php echo csrfField(); ?>
+                        <input type="hidden" name="action" value="update_payment_status">
+                        <input type="hidden" name="order_id" value="<?php echo (int) $order['id']; ?>">
+                        <select name="payment_status" aria-label="Trạng thái thanh toán">
+                            <?php foreach ($paymentOptions as $ps): ?>
+                                <option value="<?php echo htmlspecialchars($ps); ?>" <?php echo ($order['payment_status'] ?? '') === $ps ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars(orderPaymentStatusLabel($ps)); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <button type="submit" class="admin-btn-save">Lưu thanh toán</button>
+                    </form>
+                    <p class="admin-muted">Đơn COD: cập nhật «Đã thanh toán» sau khi xác nhận đã giao hàng và thu tiền mặt.</p>
+                <?php elseif (($order['payment_status'] ?? '') === 'paid'): ?>
+                    <p class="admin-muted">Đơn đã thanh toán — không thể thay đổi trạng thái này.</p>
+                <?php elseif (orderIsCodPaymentMethod($paymentMethodCode) && !orderPaymentBlocksAdminChange($order)): ?>
+                    <p class="admin-muted">Đơn COD: chỉ cập nhật thanh toán sau khi bấm «Xác nhận đã giao».</p>
+                <?php elseif (($order['payment_status'] ?? '') === 'refunded'): ?>
+                    <p class="admin-muted">Trạng thái hoàn tiền được cập nhật tự động từ mục Hoàn hàng.</p>
+                <?php elseif (orderIsPrepaidPaymentMethod($paymentMethodCode)): ?>
+                    <p class="admin-muted">Đơn chuyển khoản: tự động đánh dấu đã thanh toán khi khách đặt hàng.</p>
+                <?php elseif (orderPaymentBlocksAdminChange($order)): ?>
+                    <p class="admin-muted">Không thể chỉnh sửa khi đơn đang trong quy trình hoàn hàng hoặc đã kết thúc.</p>
+                <?php else: ?>
+                    <p class="admin-muted">Trạng thái thanh toán chỉ cập nhật thủ công cho đơn COD.</p>
+                <?php endif; ?>
+            </div>
 
             <form method="post" action="<?php echo e(app_url('admin-order-detail', ['code' => $order['order_code']])); ?>" class="admin-status-panel-form">
                 <?php echo csrfField(); ?>

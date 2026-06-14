@@ -9,6 +9,7 @@ $adminView = isset($_GET['view']) ? (string) $_GET['view'] : '';
     <a class="<?php echo $adminView === 'admin-returns' ? 'active' : ''; ?>" href="<?php echo e(app_url('admin-returns')); ?>">Hoàn hàng</a>
     <a class="<?php echo $adminView === 'admin-customers' ? 'active' : ''; ?>" href="<?php echo e(app_url('admin-customers')); ?>">Khách hàng</a>
     <a class="<?php echo in_array($adminView, ['admin-products', 'admin-product-create', 'admin-product-edit'], true) ? 'active' : ''; ?>" href="<?php echo e(app_url('admin-products')); ?>">Sản phẩm</a>
+    <a class="<?php echo in_array($adminView, ['admin-coupons', 'admin-coupon-create', 'admin-coupon-edit'], true) ? 'active' : ''; ?>" href="<?php echo e(app_url('admin-coupons')); ?>">Mã giảm giá</a>
     <a class="<?php echo $adminView === 'admin-reviews' ? 'active' : ''; ?>" href="<?php echo e(app_url('admin-reviews')); ?>">Đánh giá</a>
     <a class="<?php echo $adminView === 'admin-blog' || $adminView === 'blog-editor' ? 'active' : ''; ?>" href="<?php echo e(app_url('admin-blog')); ?>">Quản lý blog</a>
     <a class="<?php echo $adminView === 'admin-blog-comments' ? 'active' : ''; ?>" href="<?php echo e(app_url('admin-blog-comments')); ?>">Bình luận blog</a>

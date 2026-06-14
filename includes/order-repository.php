@@ -189,10 +189,26 @@ function orderCreateFromCheckout(
             );
         }
 
+        $transactionCode = null;
+        $gatewayResponse = null;
+        $stmtPmCode = $conn->prepare('SELECT code FROM payment_methods WHERE id = ? LIMIT 1');
+        $paymentMethodCode = '';
+        if ($stmtPmCode) {
+            $stmtPmCode->bind_param('i', $paymentMethodId);
+            $stmtPmCode->execute();
+            $pmRow = $stmtPmCode->get_result()->fetch_assoc();
+            $paymentMethodCode = (string) ($pmRow['code'] ?? '');
+            $stmtPmCode->close();
+        }
+        $isPrepaid = orderIsPrepaidPaymentMethod($paymentMethodCode);
+        $orderPaymentStatus = $isPrepaid ? 'paid' : 'unpaid';
+        $paymentStatus = $isPrepaid ? 'paid' : 'pending';
+        $paidAt = $isPrepaid ? date('Y-m-d H:i:s') : null;
+
         $stmtOrder = $conn->prepare("INSERT INTO orders
             (order_code, customer_id, customer_name, customer_phone, customer_email, customer_address, customer_note,
              coupon_id, coupon_code, subtotal, shipping_fee, discount_amount, grand_total, status, fulfillment_status, payment_status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'shipped', 'shipped', 'unpaid')");
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'shipped', 'shipped', ?)");
         if (!$stmtOrder) {
             throw new RuntimeException('Không tạo được lệnh lưu đơn hàng.');
         }
@@ -204,7 +220,7 @@ function orderCreateFromCheckout(
         $grandTotal = (float) $totals['total'];
 
         $stmtOrder->bind_param(
-            'sisssssisdddd',
+            'sisssssisdddds',
             $orderCode,
             $customerIdValue,
             $customer['name'],
@@ -217,7 +233,8 @@ function orderCreateFromCheckout(
             $subtotal,
             $shipping,
             $discount,
-            $grandTotal
+            $grandTotal,
+            $orderPaymentStatus
         );
         $stmtOrder->execute();
         $orderId = (int) $stmtOrder->insert_id;
@@ -260,10 +277,6 @@ function orderCreateFromCheckout(
         $stmtShipment->execute();
         $stmtShipment->close();
 
-        $transactionCode = null;
-        $gatewayResponse = null;
-        $paymentStatus = 'pending';
-        $paidAt = null;
         $stmtPayment = $conn->prepare("INSERT INTO order_payments
             (order_id, payment_method_id, amount, transaction_code, gateway_response, status, paid_at)
             VALUES (?, ?, ?, ?, ?, ?, ?)");
@@ -421,7 +434,7 @@ function orderSetPaymentStatusInTransaction(mysqli $conn, int $orderId, string $
 }
 
 /**
- * Ghi delivered_at và auto paid COD khi đơn chuyển sang đã giao (trong transaction).
+ * Ghi delivered_at khi đơn chuyển sang đã giao (trong transaction).
  */
 function orderMarkDeliveredSideEffects(mysqli $conn, int $orderId): void
 {
@@ -434,36 +447,6 @@ function orderMarkDeliveredSideEffects(mysqli $conn, int $orderId): void
         $stmtShip->bind_param('i', $orderId);
         $stmtShip->execute();
         $stmtShip->close();
-    }
-
-    $stmtOrder = $conn->prepare('SELECT payment_status FROM orders WHERE id = ? LIMIT 1');
-    if (!$stmtOrder) {
-        return;
-    }
-    $stmtOrder->bind_param('i', $orderId);
-    $stmtOrder->execute();
-    $orderRow = $stmtOrder->get_result()->fetch_assoc();
-    $stmtOrder->close();
-    if (!$orderRow || ($orderRow['payment_status'] ?? '') !== 'unpaid') {
-        return;
-    }
-
-    $stmtPm = $conn->prepare("SELECT pm.code
-                              FROM order_payments op
-                              INNER JOIN payment_methods pm ON pm.id = op.payment_method_id
-                              WHERE op.order_id = ?
-                              ORDER BY op.id DESC
-                              LIMIT 1");
-    if (!$stmtPm) {
-        return;
-    }
-    $stmtPm->bind_param('i', $orderId);
-    $stmtPm->execute();
-    $pmRow = $stmtPm->get_result()->fetch_assoc();
-    $stmtPm->close();
-
-    if (($pmRow['code'] ?? '') === 'cod') {
-        orderSetPaymentStatusInTransaction($conn, $orderId, 'paid', 'system');
     }
 }
 
@@ -797,7 +780,7 @@ function orderUpdatePaymentStatus(mysqli $conn, int $orderId, string $newStatus,
         return false;
     }
 
-    $stmtCurrent = $conn->prepare('SELECT status, fulfillment_status FROM orders WHERE id = ? LIMIT 1');
+    $stmtCurrent = $conn->prepare('SELECT status, fulfillment_status, payment_status FROM orders WHERE id = ? LIMIT 1');
     if (!$stmtCurrent) {
         return false;
     }
@@ -807,6 +790,41 @@ function orderUpdatePaymentStatus(mysqli $conn, int $orderId, string $newStatus,
     $stmtCurrent->close();
     if (!$current || orderIsLocked($current)) {
         return false;
+    }
+
+    if ($changedBy === 'admin') {
+        if ($newStatus === 'refunded' || orderPaymentBlocksAdminChange($current)) {
+            return false;
+        }
+
+        $stmtPm = $conn->prepare("SELECT pm.code
+                                  FROM order_payments op
+                                  INNER JOIN payment_methods pm ON pm.id = op.payment_method_id
+                                  WHERE op.order_id = ?
+                                  ORDER BY op.id DESC
+                                  LIMIT 1");
+        if (!$stmtPm) {
+            return false;
+        }
+        $stmtPm->bind_param('i', $orderId);
+        $stmtPm->execute();
+        $pmRow = $stmtPm->get_result()->fetch_assoc();
+        $stmtPm->close();
+        if (!orderIsCodPaymentMethod((string) ($pmRow['code'] ?? ''))) {
+            return false;
+        }
+
+        if ($newStatus === 'paid') {
+            $delivered = (string) ($current['status'] ?? '') === 'delivered'
+                || (string) ($current['fulfillment_status'] ?? '') === 'delivered';
+            if (!$delivered) {
+                return false;
+            }
+        }
+
+        if ((string) ($current['payment_status'] ?? '') === 'paid') {
+            return false;
+        }
     }
 
     $conn->begin_transaction();
@@ -955,5 +973,49 @@ function orderFulfillmentToShippingKey(string $fulfillment): string
 
 function orderPaymentStatusOptions(): array
 {
-    return ['unpaid', 'paid', 'refunded'];
+    return ['unpaid', 'paid'];
+}
+
+function orderIsCodPaymentMethod(string $code): bool
+{
+    return $code === 'cod';
+}
+
+function orderIsPrepaidPaymentMethod(string $code): bool
+{
+    return in_array($code, ['bank_transfer', 'vietqr'], true);
+}
+
+function orderPaymentBlocksAdminChange(array $order): bool
+{
+    $status = (string) ($order['status'] ?? '');
+    $paymentStatus = (string) ($order['payment_status'] ?? '');
+
+    if ($paymentStatus === 'refunded') {
+        return true;
+    }
+
+    if (orderIsLocked($order)) {
+        return true;
+    }
+
+    return in_array($status, ['return_pending', 'return_accepted', 'return_received', 'returned'], true);
+}
+
+function orderAdminCanUpdatePaymentStatus(array $order): bool
+{
+    if (orderPaymentBlocksAdminChange($order)) {
+        return false;
+    }
+
+    if ((string) ($order['payment_status'] ?? '') === 'paid') {
+        return false;
+    }
+
+    if (!orderIsCodPaymentMethod((string) ($order['payment']['payment_method_code'] ?? ''))) {
+        return false;
+    }
+
+    return (string) ($order['status'] ?? '') === 'delivered'
+        || (string) ($order['fulfillment_status'] ?? '') === 'delivered';
 }

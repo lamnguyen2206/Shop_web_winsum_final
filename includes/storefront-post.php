@@ -93,7 +93,7 @@ function storefrontHandleBlogPostPost(mysqli $conn): void
 function storefrontHandleOrderDetailPost(mysqli $conn): void
 {
     $action = (string) ($_POST['action'] ?? '');
-    if ($action !== 'cancel_order') {
+    if (!in_array($action, ['cancel_order', 'confirm_refund_received'], true)) {
         return;
     }
 
@@ -105,6 +105,16 @@ function storefrontHandleOrderDetailPost(mysqli $conn): void
     $customer = customerCurrent($conn);
     if (!$customer || !csrfValidate()) {
         redirect(app_url('orders'));
+    }
+
+    if ($action === 'confirm_refund_received') {
+        require_once __DIR__ . '/return-repository.php';
+        $order = orderGetCustomerOrderDetailByCode($conn, (int) $customer['id'], $code);
+        if (!$order) {
+            redirect(app_url('orders'));
+        }
+        $result = returnCustomerConfirmRefund($conn, (int) $order['id'], (int) $customer['id']);
+        redirect(app_url('order-detail', ['code' => $code, 'msg' => $result['message'], 'ok' => $result['ok'] ? '1' : '0']));
     }
 
     $result = orderCustomerCancelForAccount($conn, (int) $customer['id'], $code);

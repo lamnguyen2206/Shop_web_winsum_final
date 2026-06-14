@@ -14,28 +14,6 @@ if ($customerId > 0) {
     }
 }
 $orders = orderGetAllOrders($conn, 100, $searchQ, $customerId);
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!csrfValidate()) {
-        $adminMessage = 'Phiên làm việc không hợp lệ.';
-    } else {
-        $action = (string) ($_POST['action'] ?? '');
-        if ($action === 'update_status') {
-            $orderId = (int) ($_POST['order_id'] ?? 0);
-            $newStatus = trim((string) ($_POST['status'] ?? ''));
-            if (orderUpdateStatus($conn, $orderId, $newStatus, 'admin')) {
-                $adminMessage = 'Đã cập nhật trạng thái đơn hàng.';
-                $adminMessageOk = true;
-            } else {
-                $adminMessage = 'Không thể cập nhật trạng thái đơn hàng.';
-                $adminMessageOk = false;
-            }
-            $orders = orderGetAllOrders($conn, 100, $searchQ, $customerId);
-        }
-    }
-}
-
-$statusOptions = ['shipped', 'delivered', 'cancelled'];
 ?>
 
 <section class="container orders-page admin-page admin-orders-page">
@@ -91,12 +69,8 @@ $statusOptions = ['shipped', 'delivered', 'cancelled'];
                 <span>Tổng tiền</span>
                 <span>Ngày đặt</span>
                 <span>Chi tiết</span>
-                <span>Cập nhật</span>
             </div>
             <?php foreach ($orders as $order): ?>
-                <?php
-                $isOrderLocked = orderIsLocked($order);
-                ?>
                 <div class="orders-row admin-order-row">
                     <span>#<?php echo htmlspecialchars($order['order_code']); ?></span>
                     <span><?php echo htmlspecialchars($order['customer_name']); ?></span>
@@ -107,27 +81,6 @@ $statusOptions = ['shipped', 'delivered', 'cancelled'];
                     <span><?php echo htmlspecialchars((string) $order['ordered_at']); ?></span>
                     <span>
                         <a class="btn-secondary order-link" href="<?php echo e(app_url('admin-order-detail', ['code' => (string) $order['order_code']])); ?>">Chi tiết</a>
-                    </span>
-                    <span>
-                        <form method="post" action="index.php?view=admin-orders" class="admin-status-form admin-order-status-form">
-                            <?php echo csrfField(); ?>
-                            <?php if ($customerId > 0): ?>
-                                <input type="hidden" name="customer_id" value="<?php echo $customerId; ?>">
-                            <?php endif; ?>
-                            <?php if ($searchQ !== ''): ?>
-                                <input type="hidden" name="q" value="<?php echo htmlspecialchars($searchQ); ?>">
-                            <?php endif; ?>
-                            <input type="hidden" name="action" value="update_status">
-                            <input type="hidden" name="order_id" value="<?php echo (int) $order['id']; ?>">
-                            <select name="status" class="admin-order-status-select" aria-label="Trạng thái đơn hàng" <?php echo $isOrderLocked ? 'disabled' : ''; ?>>
-                                <?php foreach ($statusOptions as $status): ?>
-                                    <option value="<?php echo htmlspecialchars($status); ?>" <?php echo $order['status'] === $status ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars(orderStatusLabel($status)); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <button type="submit" class="admin-btn-save" <?php echo $isOrderLocked ? 'disabled' : ''; ?>>Lưu</button>
-                        </form>
                     </span>
                 </div>
             <?php endforeach; ?>

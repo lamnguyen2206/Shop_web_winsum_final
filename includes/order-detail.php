@@ -118,8 +118,18 @@ if ($currentCustomer && $orderCode !== '') {
                 </div>
             <?php elseif ($returnRequest && $returnReqStatus === 'goods_received'): ?>
                 <p class="checkout-notice">Kho đã nhận hàng hoàn. Đơn đang <strong>chờ Admin hoàn tiền</strong> vào tài khoản bạn đã cung cấp.</p>
+            <?php elseif ($returnRequest && $returnReqStatus === 'completed' && empty($returnRequest['customer_refund_confirmed_at'])): ?>
+                <div class="checkout-notice success">
+                    <p>Admin đã hoàn tiền<?php echo !empty($returnRequest['refunded_at']) ? ' lúc ' . htmlspecialchars(date('d/m/Y H:i', strtotime((string) $returnRequest['refunded_at']))) : ''; ?>. Vui lòng kiểm tra tài khoản và xác nhận khi đã nhận được.</p>
+                </div>
+                <form method="post" action="<?php echo e(app_url('order-detail', ['code' => $order['order_code']])); ?>" class="order-cancel-form" onsubmit="return confirm('Bạn xác nhận đã nhận đủ số tiền hoàn vào tài khoản?');">
+                    <?php echo csrfField(); ?>
+                    <input type="hidden" name="action" value="confirm_refund_received">
+                    <input type="hidden" name="order_code" value="<?php echo htmlspecialchars($order['order_code']); ?>">
+                    <button type="submit" class="btn-secondary">Xác nhận đã nhận hoàn tiền</button>
+                </form>
             <?php elseif ($returnRequest && $returnReqStatus === 'completed'): ?>
-                <p class="checkout-notice success">Hoàn hàng thành công. Tiền đã được hoàn theo thông tin tài khoản của bạn.</p>
+                <p class="checkout-notice success">Hoàn hàng thành công. Bạn đã xác nhận nhận hoàn tiền<?php echo !empty($returnRequest['customer_refund_confirmed_at']) ? ' lúc ' . htmlspecialchars(date('d/m/Y H:i', strtotime((string) $returnRequest['customer_refund_confirmed_at']))) : ''; ?>.</p>
             <?php elseif ($returnRequest && $returnReqStatus === 'rejected'): ?>
                 <p class="checkout-notice error">Yêu cầu hoàn hàng đã bị từ chối<?php echo !empty($returnRequest['admin_note']) ? ': ' . htmlspecialchars((string) $returnRequest['admin_note']) : ''; ?>. Đơn quay lại trạng thái Đã giao hàng.</p>
             <?php elseif ($returnCheck['ok']): ?>

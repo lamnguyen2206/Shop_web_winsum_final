@@ -36,7 +36,7 @@ $requests = returnAdminGetAll($conn, $statusFilter !== '' ? $statusFilter : null
 
         <h1>Quản lý khiếu nại / Hoàn trả</h1>
 
-        <p class="admin-muted">Quy trình 4 bước: Duyệt yêu cầu → Chờ khách trả hàng → Nhận hàng &amp; cộng kho → Hoàn tiền &amp; đóng đơn.</p>
+        <p class="admin-muted">Quy trình 5 bước: Duyệt yêu cầu → Chờ khách trả hàng → Nhận hàng &amp; cộng kho → Hoàn tiền → Khách xác nhận đã nhận tiền.</p>
 
     </div>
 
@@ -146,6 +146,20 @@ $requests = returnAdminGetAll($conn, $statusFilter !== '' ? $statusFilter : null
 
                         <?php endif; ?>
 
+                        <?php if ($reqStatus === 'completed'): ?>
+
+                            <?php if (!empty($request['customer_refund_confirmed_at'])): ?>
+
+                                <p class="admin-muted"><strong>Khách xác nhận nhận tiền:</strong> <?php echo htmlspecialchars(date('d/m/Y H:i', strtotime((string) $request['customer_refund_confirmed_at']))); ?></p>
+
+                            <?php elseif (!empty($request['refunded_at'])): ?>
+
+                                <p class="admin-muted"><strong>Chờ khách xác nhận</strong> (đã hoàn tiền lúc <?php echo htmlspecialchars(date('d/m/Y H:i', strtotime((string) $request['refunded_at']))); ?>)</p>
+
+                            <?php endif; ?>
+
+                        <?php endif; ?>
+
                         <small>Gửi lúc: <?php echo htmlspecialchars((string) $request['created_at']); ?></small>
 
                         <div class="admin-actions-cell">
@@ -202,7 +216,7 @@ $requests = returnAdminGetAll($conn, $statusFilter !== '' ? $statusFilter : null
 
                             <?php elseif ($reqStatus === 'goods_received'): ?>
 
-                                <form method="post" class="admin-inline-form admin-return-form">
+                                <form method="post" class="admin-inline-form admin-return-form" onsubmit="return confirm('Bạn đã chuyển khoản hoàn tiền cho khách? Đơn sẽ chuyển sang trạng thái hoàn hàng và chờ khách xác nhận đã nhận tiền.');">
 
                                     <?php echo csrfField(); ?>
 

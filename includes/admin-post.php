@@ -52,6 +52,10 @@ function adminHandlePost(mysqli $conn, string $view): void
         adminHandleProductsPost($conn);
     }
 
+    if (in_array($view, ['admin-coupons', 'admin-coupon-create', 'admin-coupon-edit'], true) && csrfValidate()) {
+        adminHandleCouponsPost($conn);
+    }
+
     if (in_array($view, ['admin-orders', 'admin-order-detail'], true) && csrfValidate()) {
         adminHandleOrdersPost($conn, $view);
     }
@@ -91,7 +95,7 @@ function adminHandleReturnsPost(mysqli $conn): void
         $redirectStatus = 'accepted';
     } elseif ($action === 'return_complete_refund') {
         $result = returnAdminCompleteRefund($conn, $requestId, $adminNote);
-        $redirectStatus = 'goods_received';
+        $redirectStatus = $result['ok'] ? 'completed' : 'goods_received';
     } else {
         redirect(app_url('admin-returns'));
     }
@@ -154,7 +158,7 @@ function adminHandleOrdersPost(mysqli $conn, string $view): void
         }
         redirect(app_url('admin-order-detail', [
             'code' => $code,
-            'msg' => $ok ? 'Đã cập nhật trạng thái thanh toán.' : 'Không thể cập nhật thanh toán.',
+            'msg' => $ok ? 'Đã cập nhật trạng thái thanh toán.' : 'Không thể cập nhật thanh toán. Chỉ đơn COD đã giao mới được chỉnh thủ công.',
             'msg_ok' => $ok ? '1' : '0',
         ]));
     }
@@ -222,6 +226,39 @@ function adminHandleCustomersPost(mysqli $conn): void
     }
 
     redirect(customerAdminBuildListUrl($filters, $page) . '&msg=' . urlencode('Thao tác không hợp lệ.') . '&msg_ok=0');
+}
+
+function adminHandleCouponsPost(mysqli $conn): void
+{
+    require_once __DIR__ . '/coupon-admin-repository.php';
+
+    $action = (string) ($_POST['action'] ?? '');
+
+    if ($action === 'save_coupon') {
+        $result = couponAdminSave($conn, $_POST);
+        if (!$result['ok']) {
+            $editId = (int) ($_POST['id'] ?? 0);
+            $params = ['msg' => $result['message'], 'msg_ok' => '0'];
+            if ($editId > 0) {
+                redirect(app_url('admin-coupon-edit', array_merge($params, ['id' => $editId])));
+            }
+            redirect(app_url('admin-coupon-create', $params));
+        }
+        $couponId = (int) ($result['coupon_id'] ?? ($_POST['id'] ?? 0));
+        redirect(app_url('admin-coupon-edit', [
+            'id' => $couponId,
+            'msg' => $result['message'],
+            'msg_ok' => '1',
+        ]));
+    }
+
+    if ($action === 'toggle_coupon_active') {
+        $couponId = (int) ($_POST['coupon_id'] ?? 0);
+        if ($couponId > 0 && couponAdminToggleActive($conn, $couponId)) {
+            redirect(app_url('admin-coupons', ['msg' => 'Đã cập nhật trạng thái mã giảm giá.', 'msg_ok' => '1']));
+        }
+        redirect(app_url('admin-coupons', ['msg' => 'Không thể cập nhật mã giảm giá.', 'msg_ok' => '0']));
+    }
 }
 
 function adminHandleProductsPost(mysqli $conn): void

@@ -84,6 +84,8 @@ function returnEnsureSchema(mysqli $conn): void
 
         'refunded_at' => 'TIMESTAMP NULL DEFAULT NULL',
 
+        'customer_refund_confirmed_at' => 'TIMESTAMP NULL DEFAULT NULL',
+
     ];
 
     foreach ($columns as $col => $def) {
@@ -318,7 +320,7 @@ function returnGetByOrderId(mysqli $conn, int $orderId): ?array
 
                                    status, admin_note, created_at, reviewed_at, reviewed_by,
 
-                                   goods_received_at, refunded_at
+                                   goods_received_at, refunded_at, customer_refund_confirmed_at
 
                             FROM order_return_requests
 
@@ -750,7 +752,7 @@ function returnAdminGetAll(mysqli $conn, ?string $statusFilter = null, int $limi
 
                    r.status, r.admin_note, r.created_at, r.reviewed_at, r.reviewed_by,
 
-                   r.goods_received_at, r.refunded_at,
+                   r.goods_received_at, r.refunded_at, r.customer_refund_confirmed_at,
 
                    o.order_code, o.customer_name, o.grand_total, o.status AS order_status, o.payment_status
 
@@ -1334,7 +1336,7 @@ function returnAdminCompleteRefund(mysqli $conn, int $requestId, string $adminNo
 
 
 
-        if (($orderRow['payment_status'] ?? '') === 'paid') {
+        if (($orderRow['payment_status'] ?? '') !== 'refunded') {
 
             orderSetPaymentStatusInTransaction($conn, $orderId, 'refunded', 'return_complete');
 
@@ -1360,7 +1362,105 @@ function returnAdminCompleteRefund(mysqli $conn, int $requestId, string $adminNo
 
 
 
-    return ['ok' => true, 'message' => 'Đã hoàn tiền và đóng đơn. Doanh thu thuần đã loại trừ đơn này.'];
+    return ['ok' => true, 'message' => 'Đã ghi nhận hoàn tiền. Chờ khách xác nhận đã nhận tiền.'];
+
+}
+
+
+
+/**
+
+ * Khách xác nhận đã nhận hoàn tiền sau khi Admin chuyển khoản.
+
+ *
+
+ * @return array{ok:bool,message:string}
+
+ */
+
+function returnCustomerConfirmRefund(mysqli $conn, int $orderId, int $customerId): array
+
+{
+
+    returnEnsureSchema($conn);
+
+
+
+    if ($orderId <= 0 || $customerId <= 0) {
+
+        return ['ok' => false, 'message' => 'Yêu cầu không hợp lệ.'];
+
+    }
+
+
+
+    $request = returnGetByOrderId($conn, $orderId);
+
+    if (!$request || (int) ($request['customer_id'] ?? 0) !== $customerId) {
+
+        return ['ok' => false, 'message' => 'Không tìm thấy yêu cầu hoàn hàng.'];
+
+    }
+
+
+
+    if (returnNormalizeStatus((string) ($request['status'] ?? '')) !== 'completed') {
+
+        return ['ok' => false, 'message' => 'Yêu cầu hoàn hàng chưa được hoàn tiền.'];
+
+    }
+
+
+
+    if (empty($request['refunded_at'])) {
+
+        return ['ok' => false, 'message' => 'Admin chưa xác nhận hoàn tiền.'];
+
+    }
+
+
+
+    if (!empty($request['customer_refund_confirmed_at'])) {
+
+        return ['ok' => false, 'message' => 'Bạn đã xác nhận nhận hoàn tiền cho đơn này.'];
+
+    }
+
+
+
+    $requestId = (int) $request['id'];
+
+    $stmt = $conn->prepare("UPDATE order_return_requests
+
+                            SET customer_refund_confirmed_at = NOW()
+
+                            WHERE id = ? AND status = 'completed' AND customer_refund_confirmed_at IS NULL");
+
+    if (!$stmt) {
+
+        return ['ok' => false, 'message' => 'Không thể xác nhận hoàn tiền.'];
+
+    }
+
+    $stmt->bind_param('i', $requestId);
+
+    $stmt->execute();
+
+    $updated = $stmt->affected_rows > 0;
+
+    $stmt->close();
+
+
+
+    if (!$updated) {
+
+        return ['ok' => false, 'message' => 'Không thể xác nhận hoàn tiền. Vui lòng thử lại.'];
+
+    }
+
+
+
+    return ['ok' => true, 'message' => 'Cảm ơn bạn đã xác nhận. Quy trình hoàn hàng đã hoàn tất.'];
 
 }
 
