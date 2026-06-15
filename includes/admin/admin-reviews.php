@@ -1,6 +1,5 @@
 <?php
-require_once __DIR__ . '/../repositories/review-repository.php';
-
+require_once __DIR__ . '/../review-repository.php';
 $adminMessage = '';
 $adminMessageOk = null;
 
@@ -34,7 +33,7 @@ $reviews = reviewAdminGetNested($conn);
         <h1>Quản lý đánh giá sản phẩm</h1>
     </div>
 
-    <?php include __DIR__ . '/admin-nav.php'; ?>
+    <?php include __DIR__ . '/../admin-nav.php'; ?>
 
     <?php if ($adminMessage !== ''): ?>
         <p class="admin-notice<?php echo $adminMessageOk === true ? ' admin-notice--ok' : ($adminMessageOk === false ? ' admin-notice--err' : ''); ?>">

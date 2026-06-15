@@ -1,8 +1,8 @@
 <?php
-require_once __DIR__ . '/../repositories/blog-repository.php';
-require_once __DIR__ . '/../repositories/blog-comment-repository.php';
-require_once __DIR__ . '/../auth/customer-auth.php';
-require_once __DIR__ . '/../auth/admin-auth.php';
+require_once __DIR__ . '/../blog-repository.php';
+require_once __DIR__ . '/../blog-comment-repository.php';
+require_once __DIR__ . '/../customer-auth.php';
+require_once __DIR__ . '/../admin-auth.php';
 
 $slug = isset($_GET['slug']) ? trim((string) $_GET['slug']) : '';
 $currentPost = blogGetPostBySlug($conn, $slug);

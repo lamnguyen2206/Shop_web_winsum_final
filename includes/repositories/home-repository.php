@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/blog-repository.php';
+require_once __DIR__ . '/../blog-repository.php';
 
 function homeFormatCurrency(float $amount): string
 {
@@ -10,7 +10,7 @@ function homeFormatCurrency(float $amount): string
 /** Danh mục trang chủ (6 loại, thứ tự cố định gồm kệ trang trí). */
 function homeGetDisplayCategories(mysqli $conn): array
 {
-    require_once __DIR__ . '/product-repository.php';
+    require_once __DIR__ . '/../product-repository.php';
 
     return productGetNavMenuCategories($conn);
 }
@@ -88,7 +88,7 @@ function homeGetNewsPosts(mysqli $conn, int $limit = 2): array
  */
 function homeGetBestsellerProducts(mysqli $conn, ?int $limit = null): array
 {
-    require_once __DIR__ . '/product-repository.php';
+    require_once __DIR__ . '/../product-repository.php';
     $limit = $limit ?? productFeaturedHomeLimit();
     $fromSales = productGetBestSellers($conn, $limit);
     if ($fromSales !== []) {

@@ -46,7 +46,6 @@ VIEWS = {
     "order-lookup.php",
     "order-detail.php",
     "order-return.php",
-    "cart-store.php",
     "coupon-suggestions.php",
     "blog-data.php",
     "back-button.php",

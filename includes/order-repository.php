@@ -983,7 +983,9 @@ function orderIsCodPaymentMethod(string $code): bool
 
 function orderIsPrepaidPaymentMethod(string $code): bool
 {
-    return in_array($code, ['bank_transfer', 'vietqr'], true);
+    // VietQR / chuyển khoản: khách xác nhận qua nút demo sau khi quét QR (confirm_vietqr_demo).
+    // COD: admin cập nhật paid thủ công sau khi giao hàng.
+    return false;
 }
 
 function orderPaymentBlocksAdminChange(array $order): bool

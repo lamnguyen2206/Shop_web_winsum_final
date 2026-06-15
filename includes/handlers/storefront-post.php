@@ -55,10 +55,10 @@ function storefrontHandleBlogPostPost(mysqli $conn): void
         return;
     }
 
-    require_once __DIR__ . '/../repositories/blog-repository.php';
-    require_once __DIR__ . '/../repositories/blog-comment-repository.php';
-    require_once __DIR__ . '/../auth/customer-auth.php';
-    require_once __DIR__ . '/../auth/admin-auth.php';
+    require_once __DIR__ . '/../blog-repository.php';
+    require_once __DIR__ . '/../blog-comment-repository.php';
+    require_once __DIR__ . '/../customer-auth.php';
+    require_once __DIR__ . '/../admin-auth.php';
     require_once __DIR__ . '/../csrf.php';
 
     $slug = trim((string) ($_GET['slug'] ?? $_POST['post_slug'] ?? ''));
@@ -107,8 +107,8 @@ function storefrontHandleOrderDetailPost(mysqli $conn): void
         return;
     }
 
-    require_once __DIR__ . '/../repositories/order-repository.php';
-    require_once __DIR__ . '/../auth/customer-auth.php';
+    require_once __DIR__ . '/../order-repository.php';
+    require_once __DIR__ . '/../customer-auth.php';
     require_once __DIR__ . '/../csrf.php';
 
     $code = trim((string) ($_POST['order_code'] ?? ''));
@@ -118,7 +118,7 @@ function storefrontHandleOrderDetailPost(mysqli $conn): void
     }
 
     if ($action === 'confirm_refund_received') {
-        require_once __DIR__ . '/../repositories/return-repository.php';
+        require_once __DIR__ . '/../return-repository.php';
         $order = orderGetCustomerOrderDetailByCode($conn, (int) $customer['id'], $code);
         if (!$order) {
             redirect(app_url('orders'));
@@ -137,9 +137,9 @@ function storefrontHandleOrderReturnPost(mysqli $conn): void
         return;
     }
 
-    require_once __DIR__ . '/../repositories/order-repository.php';
-    require_once __DIR__ . '/../repositories/return-repository.php';
-    require_once __DIR__ . '/../auth/customer-auth.php';
+    require_once __DIR__ . '/../order-repository.php';
+    require_once __DIR__ . '/../return-repository.php';
+    require_once __DIR__ . '/../customer-auth.php';
     require_once __DIR__ . '/../csrf.php';
 
     $code = trim((string) ($_POST['order_code'] ?? ''));
@@ -179,9 +179,9 @@ function storefrontHandleOrderLookupPost(mysqli $conn): void
         return;
     }
 
-    require_once __DIR__ . '/../repositories/order-repository.php';
+    require_once __DIR__ . '/../order-repository.php';
     require_once __DIR__ . '/../csrf.php';
-    require_once __DIR__ . '/../auth/customer-auth.php';
+    require_once __DIR__ . '/../customer-auth.php';
 
     if (customerCurrent($conn)) {
         redirect(app_url('orders'));
@@ -218,9 +218,9 @@ function storefrontHandleOrderLookupPost(mysqli $conn): void
 
 function storefrontHandleCartPost(mysqli $conn): void
 {
-    require_once __DIR__ . '/../views/cart-store.php';
-    require_once __DIR__ . '/../repositories/coupon-repository.php';
-    require_once __DIR__ . '/../auth/customer-auth.php';
+    require_once __DIR__ . '/../cart-store.php';
+    require_once __DIR__ . '/../coupon-repository.php';
+    require_once __DIR__ . '/../customer-auth.php';
 
     $notice = '';
     $success = false;
@@ -304,9 +304,9 @@ function storefrontHandleCatalogPost(mysqli $conn): void
         return;
     }
 
-    require_once __DIR__ . '/../repositories/product-repository.php';
-    require_once __DIR__ . '/../views/cart-store.php';
-    require_once __DIR__ . '/../auth/customer-auth.php';
+    require_once __DIR__ . '/../product-repository.php';
+    require_once __DIR__ . '/../cart-store.php';
+    require_once __DIR__ . '/../customer-auth.php';
 
     $notice = '';
     $success = false;
@@ -357,10 +357,10 @@ function storefrontHandleCatalogPost(mysqli $conn): void
 
 function storefrontHandleProductPost(mysqli $conn): void
 {
-    require_once __DIR__ . '/../repositories/product-repository.php';
-    require_once __DIR__ . '/../views/cart-store.php';
-    require_once __DIR__ . '/../repositories/review-repository.php';
-    require_once __DIR__ . '/../auth/customer-auth.php';
+    require_once __DIR__ . '/../product-repository.php';
+    require_once __DIR__ . '/../cart-store.php';
+    require_once __DIR__ . '/../review-repository.php';
+    require_once __DIR__ . '/../customer-auth.php';
 
     $slug = trim((string) ($_GET['slug'] ?? ''));
     $product = $slug !== '' ? productGetBySlug($conn, $slug) : null;
@@ -445,9 +445,9 @@ function storefrontHandleCheckoutPost(mysqli $conn): void
         return;
     }
 
-    require_once __DIR__ . '/../views/cart-store.php';
-    require_once __DIR__ . '/../repositories/order-repository.php';
-    require_once __DIR__ . '/../auth/customer-auth.php';
+    require_once __DIR__ . '/../cart-store.php';
+    require_once __DIR__ . '/../order-repository.php';
+    require_once __DIR__ . '/../customer-auth.php';
 
     $result = [
         'placed' => false,
@@ -518,7 +518,7 @@ function storefrontHandleCheckoutPost(mysqli $conn): void
                 if (!$cartCheck['ok']) {
                     $result['message'] = $cartCheck['message'];
                 } elseif ($totals['coupon_code'] !== '') {
-                    require_once __DIR__ . '/../repositories/coupon-repository.php';
+                    require_once __DIR__ . '/../coupon-repository.php';
                     $couponCheck = couponValidate($conn, (string) $totals['coupon_code'], (float) $totals['subtotal'], $customerId, $customerPhone);
                     if (!$couponCheck['ok']) {
                         cartSetCoupon(null);
@@ -553,7 +553,7 @@ function storefrontHandleCheckoutPost(mysqli $conn): void
                         $_SESSION['last_order_code'] = $orderCode;
                         $_SESSION['last_order_phone'] = $customerPhone;
                         if ($couponId) {
-                            require_once __DIR__ . '/../repositories/coupon-repository.php';
+                            require_once __DIR__ . '/../coupon-repository.php';
                             couponRecordSessionOrderUseForPhone((int) $couponId, $customerPhone);
                         }
                         unset($_SESSION['checkout_shipping_method_id'], $_SESSION['checkout_payment_method_id']);
@@ -602,8 +602,8 @@ function storefrontBuildCheckoutAddress(
 
 function storefrontHandleVietQrDemoConfirm(mysqli $conn): void
 {
-    require_once __DIR__ . '/../repositories/order-repository.php';
-    require_once __DIR__ . '/../auth/customer-auth.php';
+    require_once __DIR__ . '/../order-repository.php';
+    require_once __DIR__ . '/../customer-auth.php';
     require_once __DIR__ . '/../csrf.php';
 
     $orderCode = trim((string) ($_POST['order_code'] ?? ''));

@@ -1,6 +1,5 @@
 <?php
-require_once __DIR__ . '/../repositories/blog-comment-repository.php';
-
+require_once __DIR__ . '/../blog-comment-repository.php';
 blogCommentEnsureTable($conn);
 
 $adminMessage = '';
@@ -36,7 +35,7 @@ $comments = blogCommentAdminGetNested($conn);
         <h1>Quản lý bình luận blog</h1>
     </div>
 
-    <?php include __DIR__ . '/admin-nav.php'; ?>
+    <?php include __DIR__ . '/../admin-nav.php'; ?>
 
     <?php if ($adminMessage !== ''): ?>
         <p class="admin-notice<?php echo $adminMessageOk === true ? ' admin-notice--ok' : ($adminMessageOk === false ? ' admin-notice--err' : ''); ?>">

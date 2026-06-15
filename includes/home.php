@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/home-repository.php';
+require_once __DIR__ . '/home-repository.php';
 
 $displayCategories = homeGetDisplayCategories($conn);
 $bestsellerProducts = homeGetBestsellerProducts($conn, 8);

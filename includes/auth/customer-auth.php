@@ -89,7 +89,7 @@ function customerCurrent(mysqli $conn): ?array
         return null;
     }
 
-    require_once __DIR__ . '/admin-auth.php';
+    require_once __DIR__ . '/../admin-auth.php';
     adminSyncSessionForCustomer($customer);
 
     return $customer;
@@ -267,7 +267,7 @@ function customerLogin(mysqli $conn, string $identifier, string $password): arra
     $_SESSION['customer_id'] = (int) $row['id'];
     session_regenerate_id(true);
     customerLoginClearAttempts();
-    require_once __DIR__ . '/admin-auth.php';
+    require_once __DIR__ . '/../admin-auth.php';
     $customer = customerGetById($conn, (int) $row['id']);
     adminSyncSessionForCustomer($customer);
 
@@ -280,10 +280,10 @@ function customerLogin(mysqli $conn, string $identifier, string $password): arra
 
 function customerLogout(): void
 {
-    require_once __DIR__ . '/../views/cart-store.php';
+    require_once __DIR__ . '/../cart-store.php';
     cartClear();
     unset($_SESSION['customer_id']);
-    require_once __DIR__ . '/admin-auth.php';
+    require_once __DIR__ . '/../admin-auth.php';
     adminLogout();
 }
 

@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/../repositories/product-repository.php';
-require_once __DIR__ . '/../repositories/review-repository.php';
+require_once __DIR__ . '/../product-repository.php';
+require_once __DIR__ . '/../review-repository.php';
 
 $slug = trim((string) ($_GET['slug'] ?? ''));
 $product = productGetBySlug($conn, $slug);

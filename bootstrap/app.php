@@ -16,7 +16,7 @@ require_once __DIR__ . '/../includes/customer-auth-post.php';
 require_once __DIR__ . '/../includes/admin-auth.php';
 require_once __DIR__ . '/../includes/inventory-repository.php';
 require_once __DIR__ . '/../includes/admin-post.php';
-require_once __DIR__ . '/../includes/storefront-post.php';
+require_once __DIR__ . '/../includes/handlers/storefront-post.php';
 require_once __DIR__ . '/../includes/blog-editor-handler.php';
 
 customerBootstrapAdminAccount($conn);

@@ -1,8 +1,8 @@
 <?php
 require_once __DIR__ . '/admin-stats.php';
-require_once __DIR__ . '/../repositories/inventory-repository.php';
-require_once __DIR__ . '/../repositories/order-repository.php';
-require_once __DIR__ . '/../repositories/review-repository.php';
+require_once __DIR__ . '/../inventory-repository.php';
+require_once __DIR__ . '/../order-repository.php';
+require_once __DIR__ . '/../review-repository.php';
 
 $stats = adminGetDashboardStats($conn);
 $customerOrderSearch = trim((string) ($_GET['customer_q'] ?? ''));
@@ -24,7 +24,7 @@ $customerOrders = $customerOrderSearch !== ''
         <h1>Bảng quản trị Winsum Home</h1>
     </div>
 
-    <?php include __DIR__ . '/admin-nav.php'; ?>
+    <?php include __DIR__ . '/../admin-nav.php'; ?>
 
     <div class="admin-stats-grid">
         <article class="admin-stat-card">

@@ -37,10 +37,10 @@ function adminGetDashboardStats(mysqli $conn): array
         }
     }
 
-    require_once __DIR__ . '/../repositories/inventory-repository.php';
+    require_once __DIR__ . '/../inventory-repository.php';
     $stats['inventory_alerts_unread'] = inventoryCountUnreadAlerts($conn);
 
-    require_once __DIR__ . '/../repositories/return-repository.php';
+    require_once __DIR__ . '/../return-repository.php';
     $stats['returns_pending'] = returnCountPending($conn);
 
     return $stats;
