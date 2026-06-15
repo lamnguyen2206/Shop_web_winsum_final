@@ -26,6 +26,10 @@ $customerOrders = $customerOrderSearch !== ''
 
     <?php include __DIR__ . '/../admin-nav.php'; ?>
 
+    <?php if (!empty($adminTasksPayload)): ?>
+        <?php include __DIR__ . '/partials/task-panel.php'; ?>
+    <?php endif; ?>
+
     <div class="admin-stats-grid">
         <article class="admin-stat-card">
             <span class="admin-stat-label">Tổng đơn hàng</span>

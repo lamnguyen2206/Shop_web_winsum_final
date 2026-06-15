@@ -127,6 +127,8 @@ function appAssetsForView(string $view, bool $storefrontGuest): array
     }
     if (str_starts_with($view, 'admin') || $view === 'blog-editor') {
         $styles[] = 'assets/css/admin.css';
+        $tasksJs = __DIR__ . '/../assets/js/admin-tasks.js';
+        $scripts[] = 'assets/js/admin-tasks.js?v=' . (int) @filemtime($tasksJs);
     }
     if ($view === 'admin-dashboard') {
         $scripts[] = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js';
