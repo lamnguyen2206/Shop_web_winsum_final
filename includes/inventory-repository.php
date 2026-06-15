@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../config/database.php';
 
 /**
- * Tạo bảng inventory_alerts nếu DB cũ chưa chạy schema/13 (tránh lỗi khi vào trang admin).
+ * Tạo bảng inventory_alerts nếu DB cũ chưa chạy schema (tránh lỗi khi vào trang admin).
  */
 function inventoryEnsureAlertsTable(mysqli $conn): void
 {
@@ -28,45 +28,23 @@ function inventoryEnsureAlertsTable(mysqli $conn): void
     );
 }
 
-function inventoryGetDefaultWarehouseId(mysqli $conn): int
-{
-    static $cached = null;
-    if ($cached !== null) {
-        return $cached;
-    }
-    $result = $conn->query("SELECT id FROM warehouses WHERE is_default = 1 ORDER BY id ASC LIMIT 1");
-    if ($result && ($row = $result->fetch_assoc())) {
-        $cached = (int) $row['id'];
-        return $cached;
-    }
-    $result = $conn->query('SELECT id FROM warehouses ORDER BY id ASC LIMIT 1');
-    if ($result && ($row = $result->fetch_assoc())) {
-        $cached = (int) $row['id'];
-        return $cached;
-    }
-    $cached = 0;
-    return 0;
-}
-
 /**
- * Số lượng có thể bán (tồn kho - giữ chỗ) tại kho mặc định.
+ * Số lượng có thể bán của sản phẩm.
  */
 function inventoryGetAvailableQty(mysqli $conn, int $productId): int
 {
-    $warehouseId = inventoryGetDefaultWarehouseId($conn);
-    if ($warehouseId <= 0 || $productId <= 0) {
+    if ($productId <= 0) {
         return 0;
     }
 
-    $stmt = $conn->prepare('SELECT quantity_on_hand, quantity_reserved
+    $stmt = $conn->prepare('SELECT quantity_on_hand
                             FROM inventory_items
                             WHERE product_id = ?
-                              AND warehouse_id = ?
                             LIMIT 1');
     if (!$stmt) {
         return 0;
     }
-    $stmt->bind_param('ii', $productId, $warehouseId);
+    $stmt->bind_param('i', $productId);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
@@ -74,7 +52,7 @@ function inventoryGetAvailableQty(mysqli $conn, int $productId): int
         return 0;
     }
 
-    return max(0, (int) $row['quantity_on_hand'] - (int) $row['quantity_reserved']);
+    return max(0, (int) $row['quantity_on_hand']);
 }
 
 /**
@@ -152,13 +130,10 @@ function inventoryValidateCartItems(mysqli $conn, array $cartItems): array
             if (strpos($check['message'], 'Chỉ còn') === 0) {
                 return [
                     'ok' => false,
-                    'message' => 'Sản phẩm "' . $product['name'] . '": ' . $check['message'],
+                    'message' => 'Sản phẩm "' . $product['name'] . '" — ' . $check['message'],
                 ];
             }
-            return [
-                'ok' => false,
-                'message' => 'Sản phẩm "' . $product['name'] . '" — ' . $check['message'],
-            ];
+            return $check;
         }
     }
 
@@ -174,10 +149,6 @@ function inventoryValidateCartItems(mysqli $conn, array $cartItems): array
 function inventoryDeductForOrder(mysqli $conn, array $cartItems, int $orderId, string $orderCode): array
 {
     inventoryEnsureAlertsTable($conn);
-    $warehouseId = inventoryGetDefaultWarehouseId($conn);
-    if ($warehouseId <= 0) {
-        return ['alerts' => [], 'any_deducted' => false];
-    }
 
     $need = inventoryAggregateCartQty($cartItems);
     $createdAlerts = [];
@@ -187,7 +158,6 @@ function inventoryDeductForOrder(mysqli $conn, array $cartItems, int $orderId, s
                                 FROM inventory_items ii
                                 INNER JOIN products p ON p.id = ii.product_id
                                 WHERE ii.product_id = ?
-                                  AND ii.warehouse_id = ?
                                 FOR UPDATE');
     $stmtUpdateInv = $conn->prepare('UPDATE inventory_items SET quantity_on_hand = ?, updated_at = NOW() WHERE id = ?');
     $stmtUpdateProduct = $conn->prepare("UPDATE products SET stock_status = 'preorder', updated_at = NOW() WHERE id = ?");
@@ -200,7 +170,7 @@ function inventoryDeductForOrder(mysqli $conn, array $cartItems, int $orderId, s
     }
 
     foreach ($need as $productId => $qty) {
-        $stmtLock->bind_param('ii', $productId, $warehouseId);
+        $stmtLock->bind_param('i', $productId);
         $stmtLock->execute();
         $row = $stmtLock->get_result()->fetch_assoc();
         if (!$row) {
@@ -279,11 +249,6 @@ function inventoryRestockForOrder(mysqli $conn, int $orderId): bool
         return false;
     }
 
-    $warehouseId = inventoryGetDefaultWarehouseId($conn);
-    if ($warehouseId <= 0) {
-        return false;
-    }
-
     $stmtLines = $conn->prepare('SELECT product_id, quantity FROM order_items WHERE order_id = ? AND stock_deducted = 1 AND product_id IS NOT NULL');
     if (!$stmtLines) {
         return false;
@@ -301,7 +266,7 @@ function inventoryRestockForOrder(mysqli $conn, int $orderId): bool
     }
 
     $stmtLock = $conn->prepare('SELECT id, quantity_on_hand FROM inventory_items
-                                WHERE product_id = ? AND warehouse_id = ?
+                                WHERE product_id = ?
                                 FOR UPDATE');
     $stmtUpdateInv = $conn->prepare('UPDATE inventory_items SET quantity_on_hand = ?, updated_at = NOW() WHERE id = ?');
     $stmtRestoreProduct = $conn->prepare("UPDATE products SET stock_status = 'in_stock', updated_at = NOW()
@@ -316,7 +281,7 @@ function inventoryRestockForOrder(mysqli $conn, int $orderId): bool
     foreach ($lines as $line) {
         $productId = (int) $line['product_id'];
         $qty = (int) $line['quantity'];
-        $stmtLock->bind_param('ii', $productId, $warehouseId);
+        $stmtLock->bind_param('i', $productId);
         $stmtLock->execute();
         $inv = $stmtLock->get_result()->fetch_assoc();
         $stmtLock->free_result();
@@ -403,18 +368,15 @@ function inventoryMarkAllAlertsRead(mysqli $conn): bool
 
 function inventoryProductHasRow(mysqli $conn, int $productId): bool
 {
-    $warehouseId = inventoryGetDefaultWarehouseId($conn);
-    if ($warehouseId <= 0 || $productId <= 0) {
+    if ($productId <= 0) {
         return false;
     }
 
-    $stmt = $conn->prepare('SELECT id FROM inventory_items
-                            WHERE product_id = ? AND warehouse_id = ?
-                            LIMIT 1');
+    $stmt = $conn->prepare('SELECT id FROM inventory_items WHERE product_id = ? LIMIT 1');
     if (!$stmt) {
         return false;
     }
-    $stmt->bind_param('ii', $productId, $warehouseId);
+    $stmt->bind_param('i', $productId);
     $stmt->execute();
     $exists = (bool) $stmt->get_result()->fetch_assoc();
     $stmt->close();
@@ -423,23 +385,20 @@ function inventoryProductHasRow(mysqli $conn, int $productId): bool
 }
 
 /**
- * Cập nhật tồn kho từ form admin (số lượng tại kho mặc định).
+ * Cập nhật tồn kho từ form admin.
  */
 function inventorySetProductQty(mysqli $conn, int $productId, int $quantity): bool
 {
-    $warehouseId = inventoryGetDefaultWarehouseId($conn);
-    if ($warehouseId <= 0 || $productId <= 0) {
+    if ($productId <= 0) {
         return false;
     }
     $quantity = max(0, $quantity);
 
-    $stmt = $conn->prepare('SELECT id FROM inventory_items
-                            WHERE product_id = ? AND warehouse_id = ?
-                            LIMIT 1');
+    $stmt = $conn->prepare('SELECT id FROM inventory_items WHERE product_id = ? LIMIT 1');
     if (!$stmt) {
         return false;
     }
-    $stmt->bind_param('ii', $productId, $warehouseId);
+    $stmt->bind_param('i', $productId);
     $stmt->execute();
     $existing = $stmt->get_result()->fetch_assoc();
     $stmt->close();
@@ -456,15 +415,11 @@ function inventorySetProductQty(mysqli $conn, int $productId, int $quantity): bo
         return $ok;
     }
 
-    $reserved = 0;
-    $reorder = 5;
-    $stmtIns = $conn->prepare('INSERT INTO inventory_items
-        (product_id, warehouse_id, quantity_on_hand, quantity_reserved, reorder_level)
-        VALUES (?, ?, ?, ?, ?)');
+    $stmtIns = $conn->prepare('INSERT INTO inventory_items (product_id, quantity_on_hand) VALUES (?, ?)');
     if (!$stmtIns) {
         return false;
     }
-    $stmtIns->bind_param('iiiii', $productId, $warehouseId, $quantity, $reserved, $reorder);
+    $stmtIns->bind_param('ii', $productId, $quantity);
     $ok = $stmtIns->execute();
     $stmtIns->close();
     return $ok;

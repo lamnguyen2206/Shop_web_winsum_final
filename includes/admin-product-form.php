@@ -24,7 +24,6 @@ $form = $editing ?: [
     'short_description' => '',
     'description' => '',
     'base_price' => '',
-    'compare_at_price' => '',
     'stock_status' => 'in_stock',
     'material' => '',
     'color' => '',
@@ -90,10 +89,7 @@ $form = $editing ?: [
                     <label>Giá bán (VNĐ)
                         <input type="number" name="base_price" min="0" step="1000" required value="<?php echo htmlspecialchars((string) ($form['base_price'] ?? '')); ?>">
                     </label>
-                    <label>Giá so sánh (tuỳ chọn)
-                        <input type="number" name="compare_at_price" min="0" step="1000" value="<?php echo htmlspecialchars((string) ($form['compare_at_price'] ?? '')); ?>">
-                    </label>
-                    <label>Số lượng tồn kho (kho chính)
+                    <label>Số lượng tồn kho
                         <input type="number" name="stock_quantity" min="0" step="1" value="<?php echo (int) ($form['stock_quantity'] ?? 0); ?>">
                     </label>
                     <label>Tình trạng kho

@@ -3,19 +3,40 @@
 declare(strict_types=1);
 
 /**
- * Điền 161 test case vào Template - Test Case.xlsx (sheet Import File), giữ format trường.
- * Chạy: C:\xampp\php\php.exe docs/generate-template-test-case.php
+ * Sinh file test case Excel (mỗi module một sheet).
+ * Ưu tiên script Python (không cần ext-zip). Fallback PHP nếu có ZipArchive.
+ *
+ * Chạy: C:\xampp\php\php.exe docs/testing/generate-template-test-case.php
  */
 
+$rootDir = dirname(__DIR__, 2);
 $docsDir = __DIR__;
-require_once $docsDir . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'template-xlsx-filler.php';
+$pythonScript = $rootDir . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . 'generate-filled-test-xlsx.py';
+$outputPath = $rootDir . DIRECTORY_SEPARATOR . 'Winsum-Test-Case-Template-Filled (1).xlsx';
 
-$templatePath = $docsDir . DIRECTORY_SEPARATOR . 'Template - Test Case.xlsx';
-$outputPath = $docsDir . DIRECTORY_SEPARATOR . 'Winsum-Test-Case-Template-Filled.xlsx';
+if (is_file($pythonScript)) {
+    $cmd = 'python "' . $pythonScript . '"';
+    passthru($cmd, $code);
+    if ($code === 0 && is_file($outputPath)) {
+        $sizeKb = round(filesize($outputPath) / 1024, 1);
+        echo "Output: {$outputPath} ({$sizeKb} KB)\n";
+        exit(0);
+    }
+    fwrite(STDERR, "Python script failed (code {$code}), thử PHP fallback...\n");
+}
+
+require_once $rootDir . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'template-xlsx-filler.php';
+
+$templatePath = $rootDir . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'Template - Test Case.xlsx';
 $reportData = require $docsDir . DIRECTORY_SEPARATOR . 'test-report-data.php';
 
 if (!is_file($templatePath)) {
     fwrite(STDERR, "Không tìm thấy template: {$templatePath}\n");
+    exit(1);
+}
+
+if (!class_exists('ZipArchive')) {
+    fwrite(STDERR, "Cần bật php_zip hoặc chạy: python scripts/generate-filled-test-xlsx.py\n");
     exit(1);
 }
 

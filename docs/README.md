@@ -10,6 +10,8 @@ Thư mục này chứa phần tài liệu em nộp kèm đồ án: hướng dẫ
 |----------|--------|
 | [huong-dan-cai-dat.md](huong-dan-cai-dat.md) | Cài XAMPP, import DB, chạy thử, xử lý lỗi |
 | [luong-nghiep-vu.md](luong-nghiep-vu.md) | Luồng đặt hàng, thanh toán, hoàn trả, doanh thu |
+| [ru-ro-trien-khai.md](ru-ro-trien-khai.md) | Rủi ro triển khai (Markdown) |
+| [Ru-ro-trien-khai-Winsum-Home.docx](Ru-ro-trien-khai-Winsum-Home.docx) | Rủi ro triển khai (Word) |
 | [testing/TEST-CASES.md](testing/TEST-CASES.md) | Danh sách test case (161 TC) |
 | [testing/DEMO-SCRIPT.md](testing/DEMO-SCRIPT.md) | Kịch bản demo 5–7 phút khi bảo vệ |
 | [database/database-design.html](database/database-design.html) | Mô tả các bảng trong CSDL |
@@ -51,7 +53,29 @@ Script này đảm bảo bảng coupon và mã `WINSUMXINCHAO` hoạt động đ
 
 ---
 
-## Sinh báo cáo kiểm thử
+## Xuất toàn bộ tài liệu (một lệnh)
+
+Double-click `docs/export-docs.bat` hoặc:
+
+```bash
+docs\export-docs.bat
+```
+
+**File sinh ra:**
+
+- `docs/testing/bao-cao-kiem-thu.html`
+- `docs/testing/bao-cao-kiem-thu.xlsx`
+- `docs/testing/bao-cao-kiem-thu.pdf` (nếu có Chrome/Edge)
+- `docs/testing/TEST-CASES.md`
+- `docs/database/Mo-ta-CSDL-Winsum-Home.docx`
+- `docs/Ru-ro-trien-khai-Winsum-Home.docx`
+- `docs/ru-ro-trien-khai.md`
+- `docs/Winsum-Test-Case-Template-Filled.xlsx`
+- `Winsum-Test-Case-Template-Filled (1).xlsx` (thư mục gốc project)
+
+---
+
+## Sinh báo cáo kiểm thử (riêng)
 
 Em viết script PHP để xuất báo cáo từ cùng một nguồn dữ liệu (`test-report-data.php`):
 
@@ -77,6 +101,16 @@ python docs/database/generate-database-doc-word.py
 ```
 
 (Cần Python 3 và thư viện `python-docx` nếu script yêu cầu.)
+
+---
+
+## Sinh tài liệu Word rủi ro triển khai
+
+```bash
+python docs/generate-ru-ro-doc-word.py
+```
+
+Kết quả: `docs/Ru-ro-trien-khai-Winsum-Home.docx`
 
 ---
 

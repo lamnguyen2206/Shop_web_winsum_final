@@ -61,7 +61,7 @@ function customerAdminList(mysqli $conn, array $filters, int $limit = 20, int $o
 {
     [$where, $types, $values] = customerAdminBuildWhere($filters);
     $sql = "SELECT c.id, c.customer_code, c.full_name, c.phone, c.email, c.status, c.role,
-                   c.created_at, c.last_login_at,
+                   c.created_at,
                    (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.id) AS order_count,
                    (SELECT COALESCE(SUM(o.grand_total), 0) FROM orders o
                     WHERE o.customer_id = c.id AND o.status = 'delivered' AND o.payment_status = 'paid') AS total_spent
@@ -132,7 +132,7 @@ function customerAdminGetById(mysqli $conn, int $customerId): ?array
 
     $stmt = $conn->prepare(
         "SELECT c.id, c.customer_code, c.full_name, c.phone, c.email, c.status, c.role,
-                c.birthday, c.gender, c.created_at, c.last_login_at,
+                c.created_at,
                 (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.id) AS order_count,
                 (SELECT COALESCE(SUM(o.grand_total), 0) FROM orders o
                  WHERE o.customer_id = c.id AND o.status = 'delivered' AND o.payment_status = 'paid') AS total_spent

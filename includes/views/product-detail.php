@@ -100,9 +100,6 @@ $inventoryQty = inventoryGetAvailableQty($conn, (int) $product['id']);
 
             <div class="price-block">
                 <strong class="price-current"><?php echo htmlspecialchars($product['price_label']); ?></strong>
-                <?php if ($product['compare_price_label']): ?>
-                    <span class="price-compare"><?php echo htmlspecialchars($product['compare_price_label']); ?></span>
-                <?php endif; ?>
             </div>
 
             <span class="stock-badge stock-badge--<?php echo htmlspecialchars($stock['class']); ?>"><?php echo htmlspecialchars($stock['label']); ?></span>

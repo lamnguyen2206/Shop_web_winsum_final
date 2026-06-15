@@ -140,14 +140,10 @@ function productMapListRow(array $row): array
         'sku' => $row['sku'],
         'short_description' => $row['short_description'] ?? '',
         'base_price' => (float) $row['base_price'],
-        'compare_at_price' => isset($row['compare_at_price']) && $row['compare_at_price'] !== null
-            ? (float) $row['compare_at_price'] : null,
         'price_label' => productFormatPrice((float) $row['base_price']),
         'stock_status' => $row['stock_status'],
         'category_name' => $row['category_name'] ?? 'Chưa phân loại',
         'category_slug' => $row['category_slug'] ?? '',
-        'brand_name' => $row['brand_name'] ?? 'Winsum Home',
-        'brand_slug' => $row['brand_slug'] ?? '',
         'image' => $row['image_url'] ?: 'assets/images/blog_1.png'
     ];
 }
@@ -222,7 +218,6 @@ function productCountSearchProducts(mysqli $conn, array $filters): int
     $sql = "SELECT COUNT(*) AS total
             FROM products p
             JOIN categories c ON c.id = p.category_id
-            LEFT JOIN brands b ON b.id = p.brand_id
             WHERE {$conditions['where_sql']}";
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
@@ -242,13 +237,11 @@ function productSearchProducts(mysqli $conn, array $filters, int $limit = 12, in
 {
     $conditions = productBuildSearchConditions($filters);
     $sortSql = productResolveSortSql($filters['sort']);
-    $sql = "SELECT p.id, p.name, p.slug, p.sku, p.short_description, p.base_price, p.compare_at_price, p.stock_status,
+    $sql = "SELECT p.id, p.name, p.slug, p.sku, p.short_description, p.base_price, p.stock_status,
                    c.name AS category_name, c.slug AS category_slug,
-                   b.name AS brand_name, b.slug AS brand_slug,
                    pi.image_url
             FROM products p
             JOIN categories c ON c.id = p.category_id
-            LEFT JOIN brands b ON b.id = p.brand_id
             LEFT JOIN product_images pi ON pi.product_id = p.id AND pi.is_primary = 1
             WHERE {$conditions['where_sql']}
             ORDER BY {$sortSql}
@@ -278,7 +271,7 @@ function productSearchProducts(mysqli $conn, array $filters, int $limit = 12, in
 
 function productGetBySlug(mysqli $conn, string $slug): ?array
 {
-    $sql = "SELECT p.id, p.category_id, p.name, p.slug, p.sku, p.short_description, p.description, p.base_price, p.compare_at_price,
+    $sql = "SELECT p.id, p.category_id, p.name, p.slug, p.sku, p.short_description, p.description, p.base_price,
                    p.stock_status, p.material, p.color, p.warranty_months, p.rating_average, p.rating_count,
                    c.name AS category_name, c.slug AS category_slug
             FROM products p
@@ -309,9 +302,7 @@ function productGetBySlug(mysqli $conn, string $slug): ?array
         'short_description' => $row['short_description'] ?? '',
         'description' => $row['description'] ?? '',
         'base_price' => (float) $row['base_price'],
-        'compare_at_price' => $row['compare_at_price'] !== null ? (float) $row['compare_at_price'] : null,
         'price_label' => productFormatPrice((float) $row['base_price']),
-        'compare_price_label' => $row['compare_at_price'] !== null ? productFormatPrice((float) $row['compare_at_price']) : null,
         'stock_status' => $row['stock_status'],
         'material' => $row['material'] ?? '',
         'color' => $row['color'] ?? '',
@@ -490,22 +481,12 @@ function productSearchAjax(mysqli $conn, string $query, int $productLimit = 8, i
 
     $products = [];
     foreach ($rows as $row) {
-        $base = (float) $row['base_price'];
-        $compare = !empty($row['compare_at_price']) ? (float) $row['compare_at_price'] : 0.0;
-
-        $discountPercent = null;
-        if ($compare > $base && $compare > 0) {
-            $discountPercent = (int) round((1 - $base / $compare) * 100);
-        }
-
         $products[] = [
             'id' => (int) $row['id'],
             'name' => $row['name'],
             'slug' => $row['slug'],
             'image' => $row['image'],
             'price_label' => $row['price_label'],
-            'compare_price_label' => $compare > $base ? productFormatPrice($compare) : null,
-            'discount_percent' => $discountPercent,
             'category_name' => $row['category_name'],
             'url' => 'index.php?view=product&slug=' . rawurlencode($row['slug']),
         ];

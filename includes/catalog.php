@@ -163,7 +163,7 @@ function catalogFilterDisplayValue(string $key, $value, array $categories): stri
                             </a>
                             <div class="catalog-content">
                                 <div class="catalog-card-body">
-                                    <p class="catalog-category"><?php echo htmlspecialchars($product['category_name']); ?> · <?php echo htmlspecialchars($product['brand_name']); ?></p>
+                                    <p class="catalog-category"><?php echo htmlspecialchars($product['category_name']); ?></p>
                                     <h3><a href="index.php?view=product&amp;slug=<?php echo urlencode($product['slug']); ?>"><?php echo htmlspecialchars($product['name']); ?></a></h3>
                                     <p class="catalog-price"><?php echo htmlspecialchars($product['price_label']); ?></p>
                                     <p class="catalog-stock">Tình trạng: <strong><?php echo htmlspecialchars(productStockStatusLabel($product['stock_status'])); ?></strong></p>

@@ -11,16 +11,6 @@ function productAdminSlugify(string $text): string
     return trim($text, '-') ?: 'san-pham';
 }
 
-function productAdminGetDefaultBrandId(mysqli $conn): ?int
-{
-    $result = $conn->query("SELECT id FROM brands WHERE is_active = 1 ORDER BY id ASC LIMIT 1");
-    if (!$result) {
-        return null;
-    }
-    $row = $result->fetch_assoc();
-    return $row ? (int) $row['id'] : null;
-}
-
 function productAdminList(mysqli $conn, int $limit = 200, string $search = ''): array
 {
     $search = trim($search);
@@ -30,11 +20,7 @@ function productAdminList(mysqli $conn, int $limit = 200, string $search = ''): 
                        COALESCE(sales.units_sold, 0) AS units_sold
                 FROM products p
                 JOIN categories c ON c.id = p.category_id
-                LEFT JOIN (
-                    SELECT ii.product_id, ii.quantity_on_hand
-                    FROM inventory_items ii
-                    INNER JOIN warehouses w ON w.id = ii.warehouse_id AND w.is_default = 1
-                ) inv ON inv.product_id = p.id
+                LEFT JOIN inventory_items inv ON inv.product_id = p.id
                 LEFT JOIN (
                     SELECT oi.product_id, SUM(oi.quantity) AS units_sold
                     FROM order_items oi
@@ -88,8 +74,8 @@ function productAdminList(mysqli $conn, int $limit = 200, string $search = ''): 
 
 function productAdminGetById(mysqli $conn, int $id): ?array
 {
-    $stmt = $conn->prepare("SELECT p.id, p.brand_id, p.category_id, p.name, p.slug, p.sku, p.short_description, p.description,
-                                   p.base_price, p.compare_at_price, p.stock_status, p.material, p.color, p.warranty_months,
+    $stmt = $conn->prepare("SELECT p.id, p.category_id, p.name, p.slug, p.sku, p.short_description, p.description,
+                                   p.base_price, p.stock_status, p.material, p.color, p.warranty_months,
                                    p.is_featured, p.is_active,
                                    pi.image_url AS primary_image
                             FROM products p
@@ -120,7 +106,6 @@ function productAdminSave(mysqli $conn, array $data): array
     $shortDescription = trim((string) ($data['short_description'] ?? ''));
     $description = trim((string) ($data['description'] ?? ''));
     $basePrice = (float) ($data['base_price'] ?? 0);
-    $compareAtPrice = ($data['compare_at_price'] ?? '') !== '' ? (float) $data['compare_at_price'] : null;
     $stockStatus = (string) ($data['stock_status'] ?? 'in_stock');
     $material = trim((string) ($data['material'] ?? ''));
     $color = trim((string) ($data['color'] ?? ''));
@@ -139,11 +124,6 @@ function productAdminSave(mysqli $conn, array $data): array
         $slug = productAdminSlugify($name);
     }
 
-    $brandId = productAdminGetDefaultBrandId($conn);
-    if ($brandId === null) {
-        return ['ok' => false, 'message' => 'Chưa có thương hiệu trong hệ thống.'];
-    }
-
     $materialParam = $material !== '' ? $material : null;
     $colorParam = $color !== '' ? $color : null;
 
@@ -151,8 +131,8 @@ function productAdminSave(mysqli $conn, array $data): array
     try {
         if ($id > 0) {
             $stmt = $conn->prepare("UPDATE products SET
-                brand_id = ?, category_id = ?, name = ?, slug = ?, sku = ?, short_description = ?, description = ?,
-                base_price = ?, compare_at_price = ?, stock_status = ?, material = ?, color = ?, warranty_months = ?,
+                category_id = ?, name = ?, slug = ?, sku = ?, short_description = ?, description = ?,
+                base_price = ?, stock_status = ?, material = ?, color = ?, warranty_months = ?,
                 is_featured = ?, is_active = ?, updated_at = NOW()
                 WHERE id = ?");
             if (!$stmt) {
@@ -160,8 +140,7 @@ function productAdminSave(mysqli $conn, array $data): array
             }
             $warrantyValue = $warrantyMonths ?? 0;
             $stmt->bind_param(
-                'iisssssddsssiiii',
-                $brandId,
+                'isssssdsssiiii',
                 $categoryId,
                 $name,
                 $slug,
@@ -169,7 +148,6 @@ function productAdminSave(mysqli $conn, array $data): array
                 $shortDescription,
                 $description,
                 $basePrice,
-                $compareAtPrice,
                 $stockStatus,
                 $materialParam,
                 $colorParam,
@@ -184,17 +162,16 @@ function productAdminSave(mysqli $conn, array $data): array
             $message = 'Đã cập nhật sản phẩm.';
         } else {
             $stmt = $conn->prepare("INSERT INTO products
-                (brand_id, category_id, name, slug, short_description, description, sku,
-                 base_price, compare_at_price, stock_status, material, color, warranty_months,
+                (category_id, name, slug, short_description, description, sku,
+                 base_price, stock_status, material, color, warranty_months,
                  is_featured, is_active, published_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
             if (!$stmt) {
                 throw new RuntimeException('Không tạo được sản phẩm.');
             }
             $warrantyValue = $warrantyMonths ?? 0;
             $stmt->bind_param(
-                'iisssssddsssiii',
-                $brandId,
+                'isssssdsssiii',
                 $categoryId,
                 $name,
                 $slug,
@@ -202,7 +179,6 @@ function productAdminSave(mysqli $conn, array $data): array
                 $description,
                 $sku,
                 $basePrice,
-                $compareAtPrice,
                 $stockStatus,
                 $materialParam,
                 $colorParam,

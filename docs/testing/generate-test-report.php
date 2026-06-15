@@ -255,6 +255,12 @@ echo "Đã tạo Markdown: {$mdPath}\n";
 $excelScript = $docsDir . DIRECTORY_SEPARATOR . 'generate-test-report-excel.php';
 if (is_file($excelScript)) {
     passthru('"' . PHP_BINARY . '" "' . $excelScript . '"', $excelCode);
+    if ($excelCode !== 0) {
+        $pyExcel = $docsDir . DIRECTORY_SEPARATOR . 'generate-test-report-excel.py';
+        if (is_file($pyExcel)) {
+            passthru('python "' . $pyExcel . '"', $pyCode);
+        }
+    }
 } else {
     echo "Không tìm thấy {$excelScript}\n";
 }

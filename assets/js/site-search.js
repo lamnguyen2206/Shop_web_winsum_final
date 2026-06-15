@@ -94,12 +94,6 @@
         }
         productsWrap.hidden = false;
         productList.innerHTML = items.map(function (p) {
-            var compare = p.compare_price_label
-                ? '<span class="site-search-product-compare">' + escapeHtml(p.compare_price_label) + '</span>'
-                : '';
-            var discount = p.discount_percent
-                ? '<span class="site-search-product-discount">-' + escapeHtml(String(p.discount_percent)) + '%</span>'
-                : '';
             return (
                 '<a class="site-search-product" href="' + escapeHtml(p.url) + '">' +
                 '<img src="' + escapeHtml(p.image) + '" alt="" width="56" height="56" loading="lazy">' +
@@ -107,9 +101,7 @@
                 '<span class="site-search-product-name">' + escapeHtml(p.name) + '</span>' +
                 '<span class="site-search-product-price-row">' +
                 '<span class="site-search-product-price">' + escapeHtml(p.price_label) + '</span>' +
-                discount +
                 '</span>' +
-                compare +
                 '</span>' +
                 '</a>'
             );

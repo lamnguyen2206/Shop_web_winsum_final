@@ -69,7 +69,7 @@ function orderGetShippingMethods(mysqli $conn): array
 
 function orderGetPaymentMethods(mysqli $conn): array
 {
-    $result = $conn->query("SELECT id, code, name, description FROM payment_methods WHERE is_active = 1 ORDER BY id ASC");
+    $result = $conn->query("SELECT id, code, name FROM payment_methods WHERE is_active = 1 ORDER BY id ASC");
     if (!$result) {
         return [];
     }
@@ -79,7 +79,6 @@ function orderGetPaymentMethods(mysqli $conn): array
             'id' => (int) $row['id'],
             'code' => $row['code'],
             'name' => orderPaymentMethodDisplayName((string) $row['code'], (string) $row['name']),
-            'description' => $row['description'] ?? ''
         ];
     }
     return $methods;
@@ -189,8 +188,6 @@ function orderCreateFromCheckout(
             );
         }
 
-        $transactionCode = null;
-        $gatewayResponse = null;
         $stmtPmCode = $conn->prepare('SELECT code FROM payment_methods WHERE id = ? LIMIT 1');
         $paymentMethodCode = '';
         if ($stmtPmCode) {
@@ -278,12 +275,12 @@ function orderCreateFromCheckout(
         $stmtShipment->close();
 
         $stmtPayment = $conn->prepare("INSERT INTO order_payments
-            (order_id, payment_method_id, amount, transaction_code, gateway_response, status, paid_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)");
+            (order_id, payment_method_id, amount, status, paid_at)
+            VALUES (?, ?, ?, ?, ?)");
         if (!$stmtPayment) {
             throw new RuntimeException('Không tạo được lệnh thanh toán.');
         }
-        $stmtPayment->bind_param('iidssss', $orderId, $paymentMethodId, $grandTotal, $transactionCode, $gatewayResponse, $paymentStatus, $paidAt);
+        $stmtPayment->bind_param('iidss', $orderId, $paymentMethodId, $grandTotal, $paymentStatus, $paidAt);
         $stmtPayment->execute();
         $stmtPayment->close();
 

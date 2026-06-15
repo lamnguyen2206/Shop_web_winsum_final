@@ -66,8 +66,8 @@ td.fail { color: #a00; font-weight: 600; text-align: center; }
   <p class="sub">Winsum Home</p>
   <p>Website thương mại điện tử nội thất &amp; chiếu sáng</p>
   <dl class="meta">
-    <dt>Phiên bản</dt><dd>1.1</dd>
-    <dt>Ngày kiểm thử</dt><dd>07/06/2026</dd>
+    <dt>Phiên bản</dt><dd>1.2</dd>
+    <dt>Ngày kiểm thử</dt><dd>15/06/2026</dd>
     <dt>Người thực hiện</dt><dd>Nhóm phát triển đồ án</dd>
     <dt>Phương pháp</dt><dd>Kiểm thử hộp đen, thủ công (Manual Black-box Testing)</dd>
     <dt>Tổng test case</dt><dd>161 case</dd>
@@ -110,7 +110,7 @@ td.fail { color: #a00; font-weight: 600; text-align: center; }
     <tr><td>PHP</td><td>8.0+</td></tr>
     <tr><td>Database</td><td>MySQL — winsumwebfinal</td></tr>
     <tr><td>Browser</td><td>Google Chrome, Microsoft Edge</td></tr>
-    <tr><td>URL</td><td>http://localhost/winsumweb/index.php</td></tr>
+    <tr><td>URL</td><td>http://localhost/webwinsum/index.php</td></tr>
   </table>
 
 <h2>3. Phương pháp và phạm vi</h2>
@@ -236,7 +236,7 @@ td.fail { color: #a00; font-weight: 600; text-align: center; }
         <tr>
       <td>TC-A01</td>
       <td>Hiển thị trang chủ</td>
-      <td>1. Mở http://localhost/winsumweb/index.php hoặc ?view=home</td>
+      <td>1. Mở http://localhost/webwinsum/index.php hoặc ?view=home</td>
       <td>Banner, danh mục, sản phẩm bán chạy, tin tức hiển thị đầy đủ</td>
       <td class="pass">Pass</td>
       <td style="text-align:center">Cao</td>
@@ -417,7 +417,7 @@ td.fail { color: #a00; font-weight: 600; text-align: center; }
         <tr>
       <td>TC-B12</td>
       <td>Hoàn lượt coupon khi hủy</td>
-      <td>1. Đặt đơn có mã, hủy đơn pending</td>
+      <td>1. Đặt đơn có mã, hủy đơn shipped (đang giao)</td>
       <td>Dùng lại mã thành công (đơn hủy không tính lượt)</td>
       <td class="pass">Pass</td>
       <td style="text-align:center">Cao</td>
@@ -671,8 +671,8 @@ td.fail { color: #a00; font-weight: 600; text-align: center; }
     </tr>
         <tr>
       <td>TC-E03</td>
-      <td>Hủy đơn pending</td>
-      <td>1. Cancel trên order-detail đơn pending</td>
+      <td>Hủy đơn đang giao</td>
+      <td>1. Cancel trên order-detail đơn shipped (mới đặt)</td>
       <td>status = cancelled, hoàn kho</td>
       <td class="pass">Pass</td>
       <td style="text-align:center">Cao</td>
@@ -711,16 +711,16 @@ td.fail { color: #a00; font-weight: 600; text-align: center; }
     </tr>
         <tr>
       <td>TC-E08</td>
-      <td>Guest hủy đơn pending</td>
-      <td>1. Tra cứu đơn guest rồi bấm hủy</td>
-      <td>Đơn pending → cancelled và hoàn kho</td>
+      <td>Guest hủy đơn đang giao</td>
+      <td>1. Tra cứu đơn guest rồi bấm hủy (đơn shipped)</td>
+      <td>Đơn shipped → cancelled và hoàn kho</td>
       <td class="pass">Pass</td>
       <td style="text-align:center">Cao</td>
     </tr>
         <tr>
       <td>TC-E09</td>
-      <td>Không hủy đơn đang giao</td>
-      <td>1. Đơn fulfillment_status = shipped, khách bấm hủy</td>
+      <td>Không hủy đơn đã giao</td>
+      <td>1. Đơn status = delivered, khách bấm hủy</td>
       <td>Hệ thống từ chối hủy đơn</td>
       <td class="pass">Pass</td>
       <td style="text-align:center">Cao</td>
@@ -947,15 +947,15 @@ td.fail { color: #a00; font-weight: 600; text-align: center; }
       <td>TC-G05</td>
       <td>Gửi bình luận</td>
       <td>1. submit_comment trên post</td>
-      <td>Tạo comment pending</td>
+      <td>Tạo comment status=approved, hiển thị ngay dưới bài</td>
       <td class="pass">Pass</td>
       <td style="text-align:center">Trung bình</td>
     </tr>
         <tr>
       <td>TC-G06</td>
-      <td>Comment sau duyệt</td>
-      <td>1. Admin approve comment</td>
-      <td>Hiện dưới bài viết</td>
+      <td>Admin trả lời bình luận</td>
+      <td>1. Admin reply trên admin-blog-comments hoặc trang bài viết</td>
+      <td>Reply nested hiện dưới comment gốc</td>
       <td class="pass">Pass</td>
       <td style="text-align:center">Trung bình</td>
     </tr>
@@ -1008,7 +1008,7 @@ td.fail { color: #a00; font-weight: 600; text-align: center; }
       <td>TC-H03</td>
       <td>Dashboard thống kê</td>
       <td>1. Xem admin-dashboard</td>
-      <td>Số đơn, doanh thu thuần, cảnh báo tồn kho</td>
+      <td>Số đơn, doanh thu thuần, biểu đồ doanh thu, cảnh báo tồn kho</td>
       <td class="pass">Pass</td>
       <td style="text-align:center">Trung bình</td>
     </tr>
@@ -1022,9 +1022,9 @@ td.fail { color: #a00; font-weight: 600; text-align: center; }
     </tr>
         <tr>
       <td>TC-H05</td>
-      <td>COD auto paid khi giao</td>
-      <td>1. Admin chuyển đơn COD sang delivered</td>
-      <td>payment_status = paid tự động</td>
+      <td>COD cập nhật paid thủ công</td>
+      <td>1. Admin chuyển đơn COD sang delivered. 2. Admin chọn «Đã thanh toán» và lưu</td>
+      <td>payment_status = paid sau bước 2 (không tự động khi giao)</td>
       <td class="pass">Pass</td>
       <td style="text-align:center">Cao</td>
     </tr>
@@ -1170,7 +1170,7 @@ td.fail { color: #a00; font-weight: 600; text-align: center; }
       <td>TC-J02</td>
       <td>Chi tiết đơn admin</td>
       <td>1. admin-order-detail?code=...</td>
-      <td>Items, khách, lịch sử trạng thái</td>
+      <td>Items, khách, trạng thái đơn/thanh toán/giao hàng</td>
       <td class="pass">Pass</td>
       <td style="text-align:center">Cao</td>
     </tr>
@@ -1192,9 +1192,9 @@ td.fail { color: #a00; font-weight: 600; text-align: center; }
     </tr>
         <tr>
       <td>TC-J05</td>
-      <td>Lịch sử trạng thái</td>
-      <td>1. Đổi trạng thái nhiều lần</td>
-      <td>order_status_history ghi log đầy đủ</td>
+      <td>Cập nhật trạng thái liên tiếp</td>
+      <td>1. Admin đổi giao hàng shipped → delivered nhiều lần trên các đơn khác nhau</td>
+      <td>Trạng thái hiển thị đúng trên chi tiết đơn sau mỗi lần lưu</td>
       <td class="pass">Pass</td>
       <td style="text-align:center">Trung bình</td>
     </tr>
@@ -1264,9 +1264,9 @@ td.fail { color: #a00; font-weight: 600; text-align: center; }
     </tr>
         <tr>
       <td>TC-J14</td>
-      <td>Lịch sử giai đoạn hoàn</td>
-      <td>1. Chạy đủ 4 giai đoạn hoàn. 2. Xem order_status_history</td>
-      <td>Ghi customer_return, return_accept, return_goods_received, return_complete</td>
+      <td>Tiến độ hoàn trên admin</td>
+      <td>1. Chạy đủ 4 giai đoạn hoàn. 2. Xem admin-returns và order-detail</td>
+      <td>Mỗi tab/trạng thái phản ánh đúng giai đoạn pending→accepted→received→completed</td>
       <td class="pass">Pass</td>
       <td style="text-align:center">Cao</td>
     </tr>
@@ -1333,9 +1333,9 @@ td.fail { color: #a00; font-weight: 600; text-align: center; }
     </tr>
         <tr>
       <td>TC-K06</td>
-      <td>Duyệt bình luận blog</td>
-      <td>1. admin-blog-comments approve</td>
-      <td>Comment hiện trên post</td>
+      <td>Quản lý bình luận blog</td>
+      <td>1. admin-blog-comments: xóa hoặc trả lời comment</td>
+      <td>Thao tác phản ánh trên trang bài viết</td>
       <td class="pass">Pass</td>
       <td style="text-align:center">Trung bình</td>
     </tr>
@@ -1620,8 +1620,8 @@ td.fail { color: #a00; font-weight: 600; text-align: center; }
     </tr>
         <tr>
       <td>TC-N07</td>
-      <td>Đơn COD auto paid khi hoàn</td>
-      <td>1. Đơn COD delivered (auto paid). 2. Chạy đủ 4 giai đoạn</td>
+      <td>Đơn COD paid thủ công khi hoàn</td>
+      <td>1. Đơn COD delivered + admin đã cập nhật paid. 2. Chạy đủ 4 giai đoạn</td>
       <td>refunded sau giai đoạn 4; revenue_net điều chỉnh</td>
       <td class="pass">Pass</td>
       <td style="text-align:center">Cao</td>
@@ -1724,7 +1724,7 @@ td.fail { color: #a00; font-weight: 600; text-align: center; }
 </p>
 
 <div class="footer-note">
-  Tài liệu được sinh tự động từ <code>docs/generate-test-report.php</code> — 07/06/2026.
+  Tài liệu được sinh tự động từ <code>docs/generate-test-report.php</code> — 15/06/2026.
   Chạy lại: <code>C:\xampp\php\php.exe docs/generate-test-report.php</code> |
   Excel: <code>docs/bao-cao-kiem-thu.xlsx</code> |
   PDF: <code>docs/bao-cao-kiem-thu.pdf</code>

@@ -8,7 +8,7 @@ declare(strict_types=1);
  */
 
 $docsDir = __DIR__;
-require_once $docsDir . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'styled-xlsx-writer.php';
+require_once dirname($docsDir) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'styled-xlsx-writer.php';
 
 $data = require $docsDir . DIRECTORY_SEPARATOR . 'test-report-data.php';
 $meta = $data['meta'];
