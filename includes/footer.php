@@ -51,11 +51,12 @@
             <div class="footer-col">
                 <h4 class="footer-col__title">Đăng ký nhận tin</h4>
                 <p class="footer-col__note">Bạn muốn nhận khuyến mãi đặc biệt? Đăng ký ngay.</p>
-                <form class="footer-newsletter" action="#" onsubmit="return false;">
+                <form class="footer-newsletter" id="footer-newsletter-form" action="#" method="post" novalidate>
                     <label class="visually-hidden" for="footer-newsletter-email">Email nhận tin</label>
-                    <input id="footer-newsletter-email" type="email" placeholder="Nhập địa chỉ email" autocomplete="email">
+                    <input id="footer-newsletter-email" type="email" name="email" placeholder="Nhập địa chỉ email" autocomplete="email" required>
                     <button type="submit">Đăng ký</button>
                 </form>
+                <p class="footer-newsletter-message" id="footer-newsletter-message" hidden role="status" aria-live="polite"></p>
                 <div class="footer-social">
                     <a href="https://www.facebook.com/" target="_blank" rel="noopener" aria-label="Facebook">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 22v-8h3l.5-4H13V7.6c0-1.2.3-2 2-2H17V2.2C16.6 2.1 15.4 2 14.1 2 11.1 2 9 3.8 9 7.2V10H6v4h3v8h4z"/></svg>

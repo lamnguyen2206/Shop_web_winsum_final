@@ -1,12 +1,12 @@
 # Báo cáo kiểm thử — Winsum Home
 
-**Ngày:** 07/06/2026 | **Tổng TC:** 161 | **Pass:** 161 | **Tỷ lệ:** 100%
+**Ngày:** 15/06/2026 | **Tổng TC:** 161 | **Pass:** 161 | **Tỷ lệ:** 100%
 
 ## Module A: Storefront — Duyệt & tìm kiếm
 
 | Mã TC | Chức năng | Các bước | Kết quả mong đợi | Kết quả | Ưu tiên |
 |-------|-----------|----------|------------------|---------|--------|
-| TC-A01 | Hiển thị trang chủ | 1. Mở http://localhost/winsumweb/index.php hoặc ?view=home | Banner, danh mục, sản phẩm bán chạy, tin tức hiển thị đầy đủ | Pass | Cao |
+| TC-A01 | Hiển thị trang chủ | 1. Mở http://localhost/webwinsum/index.php hoặc ?view=home | Banner, danh mục, sản phẩm bán chạy, tin tức hiển thị đầy đủ | Pass | Cao |
 | TC-A02 | Điều hướng menu | 1. Click Sản phẩm, Tin tức, Giỏ hàng trên header | Chuyển đúng trang tương ứng, URL view= khớp | Pass | Cao |
 | TC-A03 | Danh mục sản phẩm | 1. Mở ?view=catalog | Grid sản phẩm, ảnh, giá, nút thêm giỏ | Pass | Cao |
 | TC-A04 | Lọc theo danh mục | 1. Chọn category trên catalog | Chỉ hiển thị SP thuộc danh mục đã chọn | Pass | Cao |
@@ -32,7 +32,7 @@
 | TC-B09 | Admin không thêm giỏ | 1. Đăng nhập admin, thêm SP | Báo tài khoản QTV không mua được | Pass | Cao |
 | TC-B10 | Đồng bộ giá từ DB | 1. Đổi giá SP trên admin, mở lại cart/checkout | Giá giỏ đồng bộ khi sync/checkout | Pass | Trung bình |
 | TC-B11 | Đăng xuất xóa giỏ hàng | 1. Khách thêm SP vào giỏ rồi đăng xuất | Session giỏ hàng và coupon bị xóa | Pass | Cao |
-| TC-B12 | Hoàn lượt coupon khi hủy | 1. Đặt đơn có mã, hủy đơn pending | Dùng lại mã thành công (đơn hủy không tính lượt) | Pass | Cao |
+| TC-B12 | Hoàn lượt coupon khi hủy | 1. Đặt đơn có mã, hủy đơn shipped (đang giao) | Dùng lại mã thành công (đơn hủy không tính lượt) | Pass | Cao |
 
 ## Module C: Thanh toán (Checkout)
 
@@ -74,13 +74,13 @@
 |-------|-----------|----------|------------------|---------|--------|
 | TC-E01 | Danh sách đơn | 1. Login khách, mở ?view=orders | Liệt kê đơn của user, phân trang nếu có | Pass | Cao |
 | TC-E02 | Chi tiết đơn | 1. Click mã đơn trên danh sách | Items, tổng tiền, trạng thái, thanh toán | Pass | Cao |
-| TC-E03 | Hủy đơn pending | 1. Cancel trên order-detail đơn pending | status = cancelled, hoàn kho | Pass | Cao |
+| TC-E03 | Hủy đơn đang giao | 1. Cancel trên order-detail đơn shipped (mới đặt) | status = cancelled, hoàn kho | Pass | Cao |
 | TC-E04 | Không hủy đơn đã giao | 1. Thử hủy delivered | Từ chối / báo lỗi | Pass | Trung bình |
 | TC-E05 | Guest không xem orders | 1. Chưa login mở ?view=orders | Yêu cầu đăng nhập | Pass | Trung bình |
 | TC-E06 | Chỉ xem đơn của mình | 1. User A mở đơn user B (URL code) | Từ chối truy cập | Pass | Cao |
 | TC-E07 | Tra cứu đơn guest | 1. Nhập mã đơn + SĐT tại ?view=order-lookup | Hiển thị chi tiết đơn không cần đăng nhập | Pass | Cao |
-| TC-E08 | Guest hủy đơn pending | 1. Tra cứu đơn guest rồi bấm hủy | Đơn pending → cancelled và hoàn kho | Pass | Cao |
-| TC-E09 | Không hủy đơn đang giao | 1. Đơn fulfillment_status = shipped, khách bấm hủy | Hệ thống từ chối hủy đơn | Pass | Cao |
+| TC-E08 | Guest hủy đơn đang giao | 1. Tra cứu đơn guest rồi bấm hủy (đơn shipped) | Đơn shipped → cancelled và hoàn kho | Pass | Cao |
+| TC-E09 | Không hủy đơn đã giao | 1. Đơn status = delivered, khách bấm hủy | Hệ thống từ chối hủy đơn | Pass | Cao |
 | TC-E10 | Đồng bộ trạng thái đơn/vận chuyển | 1. Admin đổi giao hàng shipped/delivered/cancelled | status và fulfillment_status đồng bộ | Pass | Cao |
 | TC-E11 | CTA hoàn hàng trên chi tiết đơn | 1. Login, mở đơn delivered trong 7 ngày. 2. Kiểm tra nút/link hoàn hàng | Hiển thị link «Yêu cầu hoàn hàng / Trả tiền» dẫn tới ?view=order-return&code=... | Pass | Cao |
 | TC-E12 | Hết hạn hoàn hàng | 1. Mở đơn delivered_at > 7 ngày | Không hiển thị CTA hoàn hàng; order-return báo hết hạn | Pass | Cao |
@@ -115,8 +115,8 @@
 | TC-G02 | Phân trang blog | 1. Chuyển trang 2 | 6 bài/trang, pagination catalog style | Pass | Trung bình |
 | TC-G03 | Chi tiết bài viết | 1. Click bài ?view=post&slug=... | Nội dung, không ảnh cover đầu trang | Pass | Trung bình |
 | TC-G04 | Sidebar blog | 1. Xem sidebar blog | Danh mục, bài nổi bật | Pass | Thấp |
-| TC-G05 | Gửi bình luận | 1. submit_comment trên post | Tạo comment pending | Pass | Trung bình |
-| TC-G06 | Comment sau duyệt | 1. Admin approve comment | Hiện dưới bài viết | Pass | Trung bình |
+| TC-G05 | Gửi bình luận | 1. submit_comment trên post | Tạo comment status=approved, hiển thị ngay dưới bài | Pass | Trung bình |
+| TC-G06 | Admin trả lời bình luận | 1. Admin reply trên admin-blog-comments hoặc trang bài viết | Reply nested hiện dưới comment gốc | Pass | Trung bình |
 | TC-G07 | Blog editor (admin) | 1. Tạo/sửa bài ?view=blog-editor | Lưu draft/published | Pass | Trung bình |
 | TC-G08 | UTF-8 tiếng Việt blog | 1. Xem tiêu đề/nội dung VN | Không lỗi ???? | Pass | Cao |
 
@@ -126,9 +126,9 @@
 |-------|-----------|----------|------------------|---------|--------|
 | TC-H01 | Đăng nhập admin | 1. Login admin@winsumhome.vn / mật khẩu admin | Vào admin-dashboard | Pass | Cao |
 | TC-H02 | Chặn guest admin | 1. Truy cập admin-products không login | Redirect / từ chối | Pass | Cao |
-| TC-H03 | Dashboard thống kê | 1. Xem admin-dashboard | Số đơn, doanh thu thuần, cảnh báo tồn kho | Pass | Trung bình |
+| TC-H03 | Dashboard thống kê | 1. Xem admin-dashboard | Số đơn, doanh thu thuần, biểu đồ doanh thu, cảnh báo tồn kho | Pass | Trung bình |
 | TC-H04 | Đăng xuất admin | 1. admin_logout | Về storefront | Pass | Trung bình |
-| TC-H05 | COD auto paid khi giao | 1. Admin chuyển đơn COD sang delivered | payment_status = paid tự động | Pass | Cao |
+| TC-H05 | COD cập nhật paid thủ công | 1. Admin chuyển đơn COD sang delivered. 2. Admin chọn «Đã thanh toán» và lưu | payment_status = paid sau bước 2 (không tự động khi giao) | Pass | Cao |
 | TC-H06 | Doanh thu chưa trừ khi chờ hoàn | 1. Có đơn return_pending/accepted/received. 2. Xem dashboard revenue_net | revenue_net không giảm cho đến khi đơn returned | Pass | Cao |
 | TC-H07 | Doanh thu hoàn sau giai đoạn 4 | 1. Admin complete refund. 2. Refresh dashboard | revenue_refunded tăng; revenue_net giảm tương ứng | Pass | Cao |
 | TC-H08 | Cảnh báo đơn chờ hoàn | 1. Có yêu cầu hoàn pending trên admin-returns | Dashboard hoặc menu admin phản ánh số đơn cần xử lý (nếu có) | Pass | Trung bình |
@@ -153,10 +153,10 @@
 | Mã TC | Chức năng | Các bước | Kết quả mong đợi | Kết quả | Ưu tiên |
 |-------|-----------|----------|------------------|---------|--------|
 | TC-J01 | Danh sách đơn | 1. Mở admin-orders | Lọc, tìm mã đơn/SĐT, xem trạng thái thanh toán | Pass | Cao |
-| TC-J02 | Chi tiết đơn admin | 1. admin-order-detail?code=... | Items, khách, lịch sử trạng thái | Pass | Cao |
+| TC-J02 | Chi tiết đơn admin | 1. admin-order-detail?code=... | Items, khách, trạng thái đơn/thanh toán/giao hàng | Pass | Cao |
 | TC-J03 | Cập nhật thanh toán | 1. update_payment_status → paid | Dashboard doanh thu cập nhật (đơn chưa returned) | Pass | Cao |
 | TC-J04 | Cập nhật giao hàng | 1. update_fulfillment_status | Trạng thái fulfillment đổi | Pass | Cao |
-| TC-J05 | Lịch sử trạng thái | 1. Đổi trạng thái nhiều lần | order_status_history ghi log đầy đủ | Pass | Trung bình |
+| TC-J05 | Cập nhật trạng thái liên tiếp | 1. Admin đổi giao hàng shipped → delivered nhiều lần trên các đơn khác nhau | Trạng thái hiển thị đúng trên chi tiết đơn sau mỗi lần lưu | Pass | Trung bình |
 | TC-J06 | CSRF trên form đơn | 1. POST không token | Từ chối cập nhật | Pass | Trung bình |
 | TC-J07 | Khóa trạng thái cuối & luồng hoàn | 1. Đơn cancelled/returned/delivered hoặc return_pending/accepted/received, admin đổi shipped | Hệ thống từ chối cập nhật trái luồng | Pass | Cao |
 | TC-J08 | Xem đơn theo khách | 1. Từ chi tiết khách bấm xem đơn hàng | Chỉ hiện đơn của khách đó | Pass | Cao |
@@ -165,7 +165,7 @@
 | TC-J11 | Khóa thanh toán đơn cuối | 1. Đơn delivered/cancelled/returned, admin đổi payment | Form disabled và backend từ chối | Pass | Cao |
 | TC-J12 | Admin không set returned trực tiếp | 1. Admin chọn returned trên admin-orders | Không có option / backend từ chối | Pass | Cao |
 | TC-J13 | Không đổi payment khi đang hoàn | 1. Đơn return_pending, admin thử đổi payment_status | Form khóa / backend từ chối | Pass | Cao |
-| TC-J14 | Lịch sử giai đoạn hoàn | 1. Chạy đủ 4 giai đoạn hoàn. 2. Xem order_status_history | Ghi customer_return, return_accept, return_goods_received, return_complete | Pass | Cao |
+| TC-J14 | Tiến độ hoàn trên admin | 1. Chạy đủ 4 giai đoạn hoàn. 2. Xem admin-returns và order-detail | Mỗi tab/trạng thái phản ánh đúng giai đoạn pending→accepted→received→completed | Pass | Cao |
 | TC-J15 | Hoàn coupon khi returned | 1. Đơn có coupon, hoàn thành giai đoạn 4 | Lượt dùng coupon được giải phóng (có thể dùng lại) | Pass | Cao |
 
 ## Module K: Admin — Khách hàng, đánh giá, blog, hoàn hàng
@@ -177,7 +177,7 @@
 | TC-K03 | Xóa review | 1. admin-reviews delete | Review biến mất, rating SP tính lại | Pass | Trung bình |
 | TC-K04 | Duyệt review legacy | 1. admin-reviews approve (pending cũ) | Review cũ chuyển approved | Pass | Thấp |
 | TC-K05 | Quản lý blog | 1. set_blog_status, delete | Storefront phản ánh | Pass | Trung bình |
-| TC-K06 | Duyệt bình luận blog | 1. admin-blog-comments approve | Comment hiện trên post | Pass | Trung bình |
+| TC-K06 | Quản lý bình luận blog | 1. admin-blog-comments: xóa hoặc trả lời comment | Thao tác phản ánh trên trang bài viết | Pass | Trung bình |
 | TC-K07 | Trang admin-returns & tabs | 1. Mở ?view=admin-returns | Hiển thị tabs: Chờ duyệt / Đã duyệt chờ hàng / Đã nhận hàng / Hoàn tất / Từ chối | Pass | Cao |
 | TC-K08 | Giai đoạn 2 — Duyệt yêu cầu (accept) | 1. Tab Chờ duyệt, bấm Duyệt + ghi chú. 2. POST return_accept | Request → accepted; đơn → return_accepted; chưa hoàn tiền, chưa cộng kho | Pass | Cao |
 | TC-K09 | Giai đoạn 2 — Từ chối (reject) | 1. Tab Chờ duyệt, bấm Từ chối + lý do | Request → rejected; đơn → delivered | Pass | Cao |
@@ -223,7 +223,7 @@
 | TC-N04 | E2E — Giai đoạn 4 hoàn tiền | 1. Admin complete refund | request=completed; order=returned; payment_status=refunded | Pass | Cao |
 | TC-N05 | E2E — Từ chối và gửi lại | 1. Gửi yêu cầu hoàn. 2. Admin reject. 3. Khách gửi lại (còn hạn) | Lần 1 rejected→delivered; lần 2 tạo request pending mới | Pass | Cao |
 | TC-N06 | Đơn VietQR đã paid khi hoàn | 1. Đơn VietQR paid + delivered. 2. Chạy đủ 4 giai đoạn | Cuối cùng refunded; không double-count doanh thu | Pass | Cao |
-| TC-N07 | Đơn COD auto paid khi hoàn | 1. Đơn COD delivered (auto paid). 2. Chạy đủ 4 giai đoạn | refunded sau giai đoạn 4; revenue_net điều chỉnh | Pass | Cao |
+| TC-N07 | Đơn COD paid thủ công khi hoàn | 1. Đơn COD delivered + admin đã cập nhật paid. 2. Chạy đủ 4 giai đoạn | refunded sau giai đoạn 4; revenue_net điều chỉnh | Pass | Cao |
 | TC-N08 | Phí ship hoàn ghi nhận | 1. Admin nhập return_shipping_cost ở giai đoạn 3 | Giá trị lưu vào order_return_requests | Pass | Trung bình |
 | TC-N09 | Timestamp từng giai đoạn | 1. Sau mỗi bước admin, kiểm tra DB | accepted_at, goods_received_at, completed_at (hoặc tương đương) được ghi | Pass | Trung bình |
 | TC-N10 | Upload ảnh lưu đường dẫn | 1. Khách upload ảnh JPG/PNG hợp lệ | File lưu uploads/returns/...; admin xem được | Pass | Cao |

@@ -1,4 +1,28 @@
 document.addEventListener('DOMContentLoaded', function() {
+    var newsletterForm = document.getElementById('footer-newsletter-form');
+    if (newsletterForm) {
+        var newsletterMessage = document.getElementById('footer-newsletter-message');
+        var newsletterEmail = document.getElementById('footer-newsletter-email');
+
+        newsletterForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            if (!newsletterEmail || !newsletterEmail.checkValidity()) {
+                if (newsletterEmail) {
+                    newsletterEmail.reportValidity();
+                }
+                return;
+            }
+
+            if (newsletterMessage) {
+                newsletterMessage.textContent = 'Cảm ơn bạn đã đăng ký!';
+                newsletterMessage.hidden = false;
+            }
+
+            newsletterForm.reset();
+        });
+    }
+
     var navCategorySelect = document.querySelector('[data-nav-category-select]');
     if (navCategorySelect) {
         var catalogBaseUrl = navCategorySelect.getAttribute('data-catalog-url') || 'index.php?view=catalog';

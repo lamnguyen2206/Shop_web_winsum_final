@@ -12,33 +12,33 @@ declare(strict_types=1);
 function appRoutes(): array
 {
     $views = [
-        'home' => 'includes/home.php',
-        'catalog' => 'includes/catalog.php',
-        'product' => 'includes/product-detail.php',
-        'blog' => 'includes/blog.php',
-        'post' => 'includes/blog-detail.php',
-        'blog-editor' => 'includes/blog-editor.php',
-        'cart' => 'includes/cart.php',
-        'checkout' => 'includes/checkout.php',
-        'account' => 'includes/account.php',
-        'orders' => 'includes/my-orders.php',
-        'order-lookup' => 'includes/order-lookup.php',
-        'order-detail' => 'includes/order-detail.php',
-        'order-return' => 'includes/order-return.php',
-        'admin-dashboard' => 'includes/admin-dashboard.php',
-        'admin-orders' => 'includes/admin-orders.php',
-        'admin-order-detail' => 'includes/admin-order-detail.php',
-        'admin-customers' => 'includes/admin-customers.php',
-        'admin-products' => 'includes/admin-products.php',
-        'admin-product-create' => 'includes/admin-product-form.php',
-        'admin-product-edit' => 'includes/admin-product-form.php',
-        'admin-coupons' => 'includes/admin-coupons.php',
-        'admin-coupon-create' => 'includes/admin-coupon-form.php',
-        'admin-coupon-edit' => 'includes/admin-coupon-form.php',
-        'admin-reviews' => 'includes/admin-reviews.php',
-        'admin-returns' => 'includes/admin-returns.php',
-        'admin-blog' => 'includes/admin-blog.php',
-        'admin-blog-comments' => 'includes/admin-blog-comments.php',
+        'home' => 'includes/views/home.php',
+        'catalog' => 'includes/views/catalog.php',
+        'product' => 'includes/views/product-detail.php',
+        'blog' => 'includes/views/blog.php',
+        'post' => 'includes/views/blog-detail.php',
+        'blog-editor' => 'includes/views/blog-editor.php',
+        'cart' => 'includes/views/cart.php',
+        'checkout' => 'includes/views/checkout.php',
+        'account' => 'includes/views/account.php',
+        'orders' => 'includes/views/my-orders.php',
+        'order-lookup' => 'includes/views/order-lookup.php',
+        'order-detail' => 'includes/views/order-detail.php',
+        'order-return' => 'includes/views/order-return.php',
+        'admin-dashboard' => 'includes/admin/admin-dashboard.php',
+        'admin-orders' => 'includes/admin/admin-orders.php',
+        'admin-order-detail' => 'includes/admin/admin-order-detail.php',
+        'admin-customers' => 'includes/admin/admin-customers.php',
+        'admin-products' => 'includes/admin/admin-products.php',
+        'admin-product-create' => 'includes/admin/admin-product-form.php',
+        'admin-product-edit' => 'includes/admin/admin-product-form.php',
+        'admin-coupons' => 'includes/admin/admin-coupons.php',
+        'admin-coupon-create' => 'includes/admin/admin-coupon-form.php',
+        'admin-coupon-edit' => 'includes/admin/admin-coupon-form.php',
+        'admin-reviews' => 'includes/admin/admin-reviews.php',
+        'admin-returns' => 'includes/admin/admin-returns.php',
+        'admin-blog' => 'includes/admin/admin-blog.php',
+        'admin-blog-comments' => 'includes/admin/admin-blog-comments.php',
     ];
 
     $titles = [
@@ -127,6 +127,11 @@ function appAssetsForView(string $view, bool $storefrontGuest): array
     }
     if (str_starts_with($view, 'admin') || $view === 'blog-editor') {
         $styles[] = 'assets/css/admin.css';
+    }
+    if ($view === 'admin-dashboard') {
+        $scripts[] = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js';
+        $dashboardJs = __DIR__ . '/../assets/js/admin-dashboard.js';
+        $scripts[] = 'assets/js/admin-dashboard.js?v=' . (int) @filemtime($dashboardJs);
     }
     if ($view === 'blog-editor') {
         $styles[] = 'assets/css/blog-editor.css';

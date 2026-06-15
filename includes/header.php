@@ -1,8 +1,8 @@
 <?php
-require_once __DIR__ . '/cart-store.php';
-require_once __DIR__ . '/admin-auth.php';
+require_once __DIR__ . '/views/cart-store.php';
+require_once __DIR__ . '/auth/admin-auth.php';
 require_once __DIR__ . '/helpers.php';
-require_once __DIR__ . '/product-repository.php';
+require_once __DIR__ . '/repositories/product-repository.php';
 
 $view = isset($_GET['view']) ? (string) $_GET['view'] : 'home';
 $navMenuCategories = productGetNavMenuCategories($conn);
@@ -95,5 +95,5 @@ $isAdmin = adminCurrent();
             <?php endif; ?>
         </div>
     </div>
-    <?php include __DIR__ . '/site-search.php'; ?>
+    <?php include __DIR__ . '/views/site-search.php'; ?>
 </header>

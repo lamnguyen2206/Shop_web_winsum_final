@@ -387,6 +387,89 @@
     margin-bottom: 6px;
 }
 
+.review-replies {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0 0 0 16px;
+    border-left: 2px solid #e5e7eb;
+}
+
+.review-replies .review-replies {
+    margin-top: 10px;
+    padding-left: 14px;
+    border-left-color: #d1d5db;
+}
+
+.review-item--reply {
+    padding: 12px 0 0;
+    border-bottom: none;
+}
+
+.review-item--admin {
+    background: rgba(47, 93, 63, 0.06);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-left: -2px;
+}
+
+.review-item--admin .review-replies {
+    border-left-color: rgba(47, 93, 63, 0.35);
+}
+
+.review-shop-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: #2f5d3f;
+    background: #ecfdf3;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.storefront-admin-reply-form {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border: 1px dashed #9ca3af;
+    border-radius: 10px;
+    background: #f8faf9;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.storefront-admin-reply-form label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2f5d3f;
+}
+
+.storefront-admin-reply-form textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.storefront-admin-reply-form button {
+    align-self: flex-start;
+    min-height: 38px;
+    padding: 8px 18px;
+    border: none;
+    border-radius: 8px;
+    background: #2f5d3f;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.storefront-admin-reply-form button:hover {
+    filter: brightness(1.06);
+}
+
 .review-form-wrap {
     margin-top: 20px;
     padding-top: 20px;
@@ -446,13 +529,105 @@
 }
 
 .related-products {
-    margin-top: 8px;
+    margin-top: 32px;
+    padding-top: 28px;
+    border-top: 1px solid #e5e7eb;
 }
 
 .related-products h2 {
     font-size: 1.5rem;
-    margin-bottom: 16px;
+    margin: 0 0 20px;
     font-family: var(--font-serif, "Times New Roman", serif);
+    font-weight: 500;
+}
+
+.related-products-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px 16px;
+    width: 100%;
+}
+
+.related-product-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.related-product-card:hover {
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    transform: translateY(-2px);
+}
+
+.related-product-card__image {
+    display: block;
+    overflow: hidden;
+    background: #f3f4f6;
+}
+
+.related-product-card__image img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    transition: transform 0.35s ease;
+}
+
+.related-product-card:hover .related-product-card__image img {
+    transform: scale(1.04);
+}
+
+.related-product-card__body {
+    padding: 12px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+}
+
+.related-product-card__title {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.related-product-card__title a {
+    color: #111827;
+    text-decoration: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.related-product-card__title a:hover {
+    color: var(--color-accent, #2f5d3f);
+}
+
+.related-product-card__price {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-accent, #2f5d3f);
+}
+
+@media (max-width: 768px) {
+    .related-products-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .related-products-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 .product-page--empty {
@@ -477,10 +652,6 @@
 .product-page--empty .btn-secondary {
     display: inline-flex;
     padding: 0 24px;
-}
-
-.catalog-grid--compact .catalog-image img {
-    height: 220px;
 }
 
 @media (max-width: 960px) {

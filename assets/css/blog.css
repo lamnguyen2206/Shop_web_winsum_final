@@ -510,6 +510,83 @@
     color: #374151;
 }
 
+.post-comment-replies {
+    list-style: none;
+    margin: var(--space-3) 0 0;
+    padding: 0 0 0 var(--space-4);
+    border-left: 3px solid var(--color-accent, #2f5d3f);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.post-comment-replies .post-comment-replies {
+    margin-top: var(--space-2);
+    padding-left: var(--space-3);
+    border-left-color: #d1d5db;
+}
+
+.post-comment-item--reply {
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.post-comment-item--admin {
+    background: rgba(47, 93, 63, 0.06);
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.post-comment-shop-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-accent, #2f5d3f);
+    background: rgba(47, 93, 63, 0.12);
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.storefront-admin-reply-form {
+    margin-top: 14px;
+    padding: 14px 16px;
+    border: 1px dashed #9ca3af;
+    border-radius: 10px;
+    background: #f8faf9;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.storefront-admin-reply-form label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-accent, #2f5d3f);
+}
+
+.storefront-admin-reply-form textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.storefront-admin-reply-form button {
+    align-self: flex-start;
+    min-height: 38px;
+    padding: 8px 18px;
+    border: none;
+    border-radius: 8px;
+    background: var(--color-accent, #2f5d3f);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
 .post-comment-form-wrap h3 {
     margin: 0 0 var(--space-3);
     font-size: 1.125rem;
