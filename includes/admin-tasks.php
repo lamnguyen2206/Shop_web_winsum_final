@@ -23,6 +23,7 @@ function adminTasksFetchCounts(mysqli $conn): array
         'returns_pending' => 0,
         'returns_accepted' => 0,
         'returns_goods_received' => 0,
+        'orders_pending' => 0,
         'orders_shipped' => 0,
         'orders_cod_unpaid' => 0,
         'orders_vietqr_unpaid' => 0,
@@ -33,6 +34,7 @@ function adminTasksFetchCounts(mysqli $conn): array
         'returns_pending' => "SELECT COUNT(*) AS c FROM order_return_requests WHERE status = 'pending'",
         'returns_accepted' => "SELECT COUNT(*) AS c FROM order_return_requests WHERE status = 'accepted'",
         'returns_goods_received' => "SELECT COUNT(*) AS c FROM order_return_requests WHERE status = 'goods_received'",
+        'orders_pending' => "SELECT COUNT(*) AS c FROM orders WHERE status = 'pending'",
         'orders_shipped' => "SELECT COUNT(*) AS c FROM orders WHERE status = 'shipped'",
         'orders_cod_unpaid' => "SELECT COUNT(*) AS c FROM orders WHERE status = 'delivered' AND payment_status = 'unpaid'",
         'orders_vietqr_unpaid' => "SELECT COUNT(*) AS c FROM orders o
@@ -74,6 +76,12 @@ function adminTasksFetchCounts(mysqli $conn): array
             'label' => 'hoàn hàng chờ chuyển khoản',
             'url' => app_url('admin-returns', ['status' => 'goods_received']),
             'nav' => 'admin-returns',
+            'priority' => 'high',
+        ],
+        'orders_pending' => [
+            'label' => 'đơn chờ xử lý',
+            'url' => app_url('admin-orders'),
+            'nav' => 'admin-orders',
             'priority' => 'high',
         ],
         'orders_shipped' => [

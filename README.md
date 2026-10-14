@@ -192,7 +192,7 @@ Pattern **PRG** (Post-Redirect-Get): xử lý POST → `redirect()` → render G
 ### Đặt hàng — `orderCreateFromCheckout()`
 
 1. Validate giỏ (`cart-store.php`) và coupon trong transaction  
-2. INSERT `orders` — mặc định `status = shipped`, `fulfillment_status = shipped`, `payment_status = unpaid`  
+2. INSERT `orders` — mặc định `status = pending` (Chờ xử lý), `fulfillment_status = pending`, `payment_status = unpaid`  
 3. INSERT `order_items`, `order_payments`, `order_shipments`  
 4. `inventoryDeductForOrder()` → cập nhật `inventory_items.quantity_on_hand`  
 5. Ghi `coupon_redemptions` nếu có mã  
@@ -220,7 +220,9 @@ Phí lưu session `selected_shipping_fee` trước checkout.
 
 | `orders.status` | Nhãn UI | Ghi chú |
 | --- | --- | --- |
-| `shipped` | Đang giao hàng | Mặc định khi đặt — rút gọn demo |
+| `pending` | Chờ xử lý | Mặc định khi đặt. Khách đổi được phương thức thanh toán nếu chưa thu tiền |
+| `processing` | Đang xử lý | Admin bấm «Bắt đầu xử lý». Khách không còn đổi thanh toán |
+| `shipped` | Đang giao hàng | Admin xác nhận đã bàn giao |
 | `delivered` | Đã giao hàng | Admin xác nhận trên `admin-order-detail` |
 | `cancelled` | Đã hủy | Khách hủy khi `shipped`; hoàn kho |
 | `return_pending` … `returned` | Luồng hoàn | Đồng bộ với `order_return_requests` |

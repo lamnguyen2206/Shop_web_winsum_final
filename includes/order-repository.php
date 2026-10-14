@@ -27,25 +27,12 @@ function orderEnsureSchema(mysqli $conn): void
     }
 
     $conn->query("UPDATE orders
-                  SET status = 'shipped', fulfillment_status = 'shipped'
-                  WHERE status IN ('pending', 'processing', 'packed')");
-
-    $conn->query("UPDATE orders
-                  SET fulfillment_status = 'shipped'
-                  WHERE fulfillment_status IN ('pending', 'processing', 'packed')
-                    AND status NOT IN ('cancelled', 'returned', 'delivered')");
-
-    $conn->query("UPDATE orders
                   SET fulfillment_status = CASE
                       WHEN status IN ('cancelled', 'returned') THEN status
                       WHEN status = 'delivered' THEN 'delivered'
                       ELSE 'shipped'
                   END
                   WHERE fulfillment_status IS NULL OR fulfillment_status = ''");
-
-    $conn->query("UPDATE order_shipments
-                  SET status = 'shipped', shipped_at = COALESCE(shipped_at, NOW())
-                  WHERE status IN ('pending', 'processing', 'packed')");
 }
 
 function orderGetShippingMethods(mysqli $conn): array
@@ -205,7 +192,7 @@ function orderCreateFromCheckout(
         $stmtOrder = $conn->prepare("INSERT INTO orders
             (order_code, customer_id, customer_name, customer_phone, customer_email, customer_address, customer_note,
              coupon_id, coupon_code, subtotal, shipping_fee, discount_amount, grand_total, status, fulfillment_status, payment_status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'shipped', 'shipped', ?)");
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending', ?)");
         if (!$stmtOrder) {
             throw new RuntimeException('Không tạo được lệnh lưu đơn hàng.');
         }
@@ -257,8 +244,8 @@ function orderCreateFromCheckout(
         $stmtItem->close();
 
         $stmtShipment = $conn->prepare("INSERT INTO order_shipments
-            (order_id, shipping_method_id, recipient_name, recipient_phone, recipient_address, shipping_fee, status, shipped_at)
-            VALUES (?, ?, ?, ?, ?, ?, 'shipped', NOW())");
+            (order_id, shipping_method_id, recipient_name, recipient_phone, recipient_address, shipping_fee, status)
+            VALUES (?, ?, ?, ?, ?, ?, 'pending')");
         if (!$stmtShipment) {
             throw new RuntimeException('Không tạo được lệnh vận chuyển.');
         }
@@ -363,7 +350,7 @@ function orderEnrichOrderDetail(mysqli $conn, array $order): array
         $stmtShipment->close();
     }
 
-    $stmtPayment = $conn->prepare("SELECT op.status, op.amount, pm.code AS payment_method_code, pm.name AS payment_method_name
+    $stmtPayment = $conn->prepare("SELECT op.payment_method_id, op.status, op.amount, pm.code AS payment_method_code, pm.name AS payment_method_name
                                    FROM order_payments op
                                    LEFT JOIN payment_methods pm ON pm.id = op.payment_method_id
                                    WHERE op.order_id = ?
@@ -597,7 +584,140 @@ function orderCanCustomerCancel(array $order): bool
         return false;
     }
 
-    return $status === 'shipped';
+    return in_array($status, ['pending', 'shipped'], true);
+}
+
+function orderCanCustomerChangePayment(array $order): bool
+{
+    if ((string) ($order['status'] ?? '') !== 'pending') {
+        return false;
+    }
+    if ((string) ($order['payment_status'] ?? '') !== 'unpaid') {
+        return false;
+    }
+    $fulfillment = (string) ($order['fulfillment_status'] ?? '');
+
+    return $fulfillment === '' || $fulfillment === 'pending';
+}
+
+/**
+ * @return array{ok:bool,message:string}
+ */
+function orderCustomerChangePaymentMethod(mysqli $conn, int $orderId, int $paymentMethodId): array
+{
+    if ($orderId <= 0 || $paymentMethodId <= 0) {
+        return ['ok' => false, 'message' => 'Phương thức thanh toán không hợp lệ.'];
+    }
+
+    $conn->begin_transaction();
+    try {
+        $stmt = $conn->prepare('SELECT id, status, fulfillment_status, payment_status FROM orders WHERE id = ? LIMIT 1 FOR UPDATE');
+        if (!$stmt) {
+            throw new RuntimeException('Không đọc được đơn hàng.');
+        }
+        $stmt->bind_param('i', $orderId);
+        $stmt->execute();
+        $order = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        if (!$order || !orderCanCustomerChangePayment($order)) {
+            $conn->rollback();
+            return ['ok' => false, 'message' => 'Chỉ đổi phương thức thanh toán khi đơn còn chờ xử lý và chưa thanh toán.'];
+        }
+
+        $stmtMethod = $conn->prepare('SELECT id, code, name FROM payment_methods WHERE id = ? AND is_active = 1 LIMIT 1');
+        if (!$stmtMethod) {
+            throw new RuntimeException('Không đọc được phương thức thanh toán.');
+        }
+        $stmtMethod->bind_param('i', $paymentMethodId);
+        $stmtMethod->execute();
+        $method = $stmtMethod->get_result()->fetch_assoc();
+        $stmtMethod->close();
+        if (!$method) {
+            $conn->rollback();
+            return ['ok' => false, 'message' => 'Phương thức thanh toán không còn hiệu lực.'];
+        }
+
+        $stmtPay = $conn->prepare('SELECT id, payment_method_id FROM order_payments WHERE order_id = ? ORDER BY id DESC LIMIT 1 FOR UPDATE');
+        if (!$stmtPay) {
+            throw new RuntimeException('Không đọc được thanh toán của đơn.');
+        }
+        $stmtPay->bind_param('i', $orderId);
+        $stmtPay->execute();
+        $payment = $stmtPay->get_result()->fetch_assoc();
+        $stmtPay->close();
+        if (!$payment) {
+            $conn->rollback();
+            return ['ok' => false, 'message' => 'Đơn hàng chưa có khoản thanh toán.'];
+        }
+        if ((int) $payment['payment_method_id'] === $paymentMethodId) {
+            $conn->rollback();
+            return ['ok' => false, 'message' => 'Đơn đang dùng phương thức thanh toán này.'];
+        }
+
+        $paymentId = (int) $payment['id'];
+        $stmtUpdate = $conn->prepare("UPDATE order_payments
+                                      SET payment_method_id = ?, status = 'pending', paid_at = NULL, updated_at = NOW()
+                                      WHERE id = ?");
+        if (!$stmtUpdate) {
+            throw new RuntimeException('Không cập nhật được phương thức thanh toán.');
+        }
+        $stmtUpdate->bind_param('ii', $paymentMethodId, $paymentId);
+        $stmtUpdate->execute();
+        $stmtUpdate->close();
+
+        $conn->commit();
+        $methodName = orderPaymentMethodDisplayName((string) $method['code'], (string) $method['name']);
+        return ['ok' => true, 'message' => 'Đã đổi phương thức thanh toán sang ' . $methodName . '.'];
+    } catch (Throwable $e) {
+        $conn->rollback();
+        return ['ok' => false, 'message' => 'Không thể đổi phương thức thanh toán. Vui lòng thử lại.'];
+    }
+}
+
+/**
+ * @return array{ok:bool,message:string}
+ */
+function orderCustomerChangePaymentForAccount(mysqli $conn, int $customerId, string $orderCode, int $paymentMethodId): array
+{
+    $order = orderGetCustomerOrderDetailByCode($conn, $customerId, $orderCode);
+    if (!$order) {
+        return ['ok' => false, 'message' => 'Không tìm thấy đơn hàng.'];
+    }
+
+    return orderCustomerChangePaymentMethod($conn, (int) $order['id'], $paymentMethodId);
+}
+
+/**
+ * @return array{ok:bool,message:string}
+ */
+function orderCustomerChangePaymentByCodeAndPhone(mysqli $conn, string $orderCode, string $phone, int $paymentMethodId): array
+{
+    $order = orderGetOrderDetailByCodeAndPhone($conn, $orderCode, $phone);
+    if (!$order) {
+        return ['ok' => false, 'message' => 'Thông tin đơn hàng hoặc số điện thoại không chính xác.'];
+    }
+
+    return orderCustomerChangePaymentMethod($conn, (int) $order['id'], $paymentMethodId);
+}
+
+function orderStartProcessing(mysqli $conn, int $orderId): bool
+{
+    if ($orderId <= 0) {
+        return false;
+    }
+
+    $stmt = $conn->prepare("UPDATE orders
+                            SET status = 'processing', fulfillment_status = 'processing', updated_at = NOW()
+                            WHERE id = ? AND status = 'pending' AND payment_status <> 'refunded'");
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('i', $orderId);
+    $stmt->execute();
+    $changed = $stmt->affected_rows === 1;
+    $stmt->close();
+
+    return $changed;
 }
 
 /**
@@ -920,6 +1040,8 @@ function orderUpdateFulfillmentStatus(mysqli $conn, int $orderId, string $newSta
 function orderStatusLabel(string $status): string
 {
     return match ($status) {
+        'pending' => 'Chờ xử lý',
+        'processing' => 'Đang xử lý',
         'shipped' => 'Đang giao hàng',
         'delivered' => 'Đã giao hàng',
         'cancelled' => 'Đã hủy',
@@ -945,6 +1067,8 @@ function orderPaymentStatusLabel(string $status): string
 function orderFulfillmentStatusLabel(string $status): string
 {
     return match ($status) {
+        'pending' => 'Chờ xử lý',
+        'processing' => 'Đang xử lý',
         'shipped' => 'Đang giao hàng',
         'delivered' => 'Đã giao hàng',
         'cancelled' => 'Đã hủy giao',

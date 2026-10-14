@@ -63,6 +63,13 @@ if ($currentCustomer && $orderCode !== '') {
             </article>
         </div>
 
+        <?php
+        $paymentSwitchOrder = $order;
+        $paymentSwitchPostUrl = app_url('order-detail', ['code' => (string) $order['order_code']]);
+        $paymentSwitchMode = 'account';
+        include __DIR__ . '/views/partials/payment-method-switch.php';
+        ?>
+
         <?php if (vietqrOrderAwaitingPayment($order)): ?>
             <?php
             require_once __DIR__ . '/vietqr.php';

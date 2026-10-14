@@ -103,7 +103,7 @@ function storefrontHandleBlogPostPost(mysqli $conn): void
 function storefrontHandleOrderDetailPost(mysqli $conn): void
 {
     $action = (string) ($_POST['action'] ?? '');
-    if (!in_array($action, ['cancel_order', 'confirm_refund_received'], true)) {
+    if (!in_array($action, ['cancel_order', 'confirm_refund_received', 'change_payment_method'], true)) {
         return;
     }
 
@@ -124,6 +124,11 @@ function storefrontHandleOrderDetailPost(mysqli $conn): void
             redirect(app_url('orders'));
         }
         $result = returnCustomerConfirmRefund($conn, (int) $order['id'], (int) $customer['id']);
+        redirect(app_url('order-detail', ['code' => $code, 'msg' => $result['message'], 'ok' => $result['ok'] ? '1' : '0']));
+    }
+
+    if ($action === 'change_payment_method') {
+        $result = orderCustomerChangePaymentForAccount($conn, (int) $customer['id'], $code, (int) ($_POST['payment_method_id'] ?? 0));
         redirect(app_url('order-detail', ['code' => $code, 'msg' => $result['message'], 'ok' => $result['ok'] ? '1' : '0']));
     }
 
@@ -175,7 +180,8 @@ function storefrontHandleOrderReturnPost(mysqli $conn): void
 
 function storefrontHandleOrderLookupPost(mysqli $conn): void
 {
-    if (($_POST['action'] ?? '') !== 'cancel_guest_order') {
+    $action = (string) ($_POST['action'] ?? '');
+    if (!in_array($action, ['cancel_guest_order', 'change_guest_payment'], true)) {
         return;
     }
 
@@ -207,7 +213,11 @@ function storefrontHandleOrderLookupPost(mysqli $conn): void
     }
 
     $phone = phoneNormalize($phone);
-    $result = orderCustomerCancelByCodeAndPhone($conn, $code, $phone);
+    if ($action === 'change_guest_payment') {
+        $result = orderCustomerChangePaymentByCodeAndPhone($conn, $code, $phone, (int) ($_POST['payment_method_id'] ?? 0));
+    } else {
+        $result = orderCustomerCancelByCodeAndPhone($conn, $code, $phone);
+    }
     redirect(app_url('order-lookup', [
         'code' => $code,
         'phone' => $phone,

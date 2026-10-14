@@ -77,6 +77,14 @@ if ($lookupCode !== '' || $lookupPhone !== '') {
             </article>
         </div>
 
+        <?php
+        $paymentSwitchOrder = $lookupOrder;
+        $paymentSwitchPostUrl = app_url('order-lookup');
+        $paymentSwitchMode = 'guest';
+        $paymentSwitchPhone = $lookupPhone;
+        include __DIR__ . '/views/partials/payment-method-switch.php';
+        ?>
+
         <?php if (vietqrOrderAwaitingPayment($lookupOrder)): ?>
             <?php
             $vietQrOrderCode = (string) $lookupOrder['order_code'];

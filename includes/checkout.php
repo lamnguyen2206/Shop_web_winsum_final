@@ -90,11 +90,32 @@ $checkoutCanSubmit = !$checkoutBlockedAdmin
         ?>
         <div class="checkout-success-box">
             <p>Cảm ơn bạn! Đơn hàng đã được ghi nhận.</p>
+            <?php
+            $placedOrder = null;
+            if ($orderCode !== '') {
+                if ($currentCustomer) {
+                    $placedOrder = orderGetCustomerOrderDetailByCode($conn, (int) $currentCustomer['id'], $orderCode);
+                } elseif ($registerPhone !== '') {
+                    $placedOrder = orderGetOrderDetailByCodeAndPhone($conn, $orderCode, $registerPhone);
+                }
+            }
+            ?>
             <?php if ($showVietQr): ?>
                 <?php
                 $vietQrOrderCode = $orderCode;
                 $vietQrAmount = $orderTotal;
                 include __DIR__ . '/views/partials/vietqr-box.php';
+                ?>
+            <?php endif; ?>
+            <?php if (is_array($placedOrder)): ?>
+                <?php
+                $paymentSwitchOrder = $placedOrder;
+                $paymentSwitchPostUrl = $currentCustomer
+                    ? app_url('order-detail', ['code' => $orderCode])
+                    : app_url('order-lookup');
+                $paymentSwitchMode = $currentCustomer ? 'account' : 'guest';
+                $paymentSwitchPhone = $registerPhone;
+                include __DIR__ . '/views/partials/payment-method-switch.php';
                 ?>
             <?php elseif ($orderPaymentName !== ''): ?>
                 <p>Phương thức thanh toán: <?php echo e($orderPaymentName); ?></p>

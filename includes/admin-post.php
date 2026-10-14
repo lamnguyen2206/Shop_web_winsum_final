@@ -143,6 +143,28 @@ function adminHandleOrdersPost(mysqli $conn, string $view): void
 
     $action = (string) ($_POST['action'] ?? '');
 
+    if ($action === 'start_order_processing') {
+        if (!csrfValidate()) {
+            redirect(app_url('admin-orders', ['msg' => 'Phiên làm việc không hợp lệ.']));
+        }
+        $orderId = (int) ($_POST['order_id'] ?? 0);
+        $ok = orderStartProcessing($conn, $orderId);
+        $stmt = $conn->prepare('SELECT order_code FROM orders WHERE id = ? LIMIT 1');
+        $code = '';
+        if ($stmt) {
+            $stmt->bind_param('i', $orderId);
+            $stmt->execute();
+            $row = $stmt->get_result()->fetch_assoc();
+            $code = (string) ($row['order_code'] ?? '');
+            $stmt->close();
+        }
+        redirect(app_url('admin-order-detail', [
+            'code' => $code,
+            'msg' => $ok ? 'Đơn đã chuyển sang đang xử lý. Khách không còn đổi được phương thức thanh toán.' : 'Chỉ đơn đang chờ xử lý mới bắt đầu xử lý được.',
+            'msg_ok' => $ok ? '1' : '0',
+        ]));
+    }
+
     if ($action === 'confirm_vietqr_payment') {
         require_once __DIR__ . '/vietqr.php';
         if (!csrfValidate()) {

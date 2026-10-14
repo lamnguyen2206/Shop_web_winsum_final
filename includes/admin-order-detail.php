@@ -128,6 +128,15 @@ $paymentMethodCode = $order ? (string) ($order['payment']['payment_method_code']
                 <input type="hidden" name="order_id" value="<?php echo (int) $order['id']; ?>">
                 <input type="hidden" name="fulfillment_status" value="delivered">
                 <h3>Trạng thái giao hàng</h3>
+                <?php if ((string) $order['status'] === 'pending'): ?>
+                    <form method="post" action="<?php echo e(app_url('admin-order-detail', ['code' => $order['order_code']])); ?>" class="admin-status-panel-form-inner">
+                        <?php echo csrfField(); ?>
+                        <input type="hidden" name="action" value="start_order_processing">
+                        <input type="hidden" name="order_id" value="<?php echo (int) $order['id']; ?>">
+                        <button type="submit" class="admin-btn-save">Bắt đầu xử lý</button>
+                    </form>
+                    <p class="admin-muted">Sau bước này khách không đổi phương thức thanh toán được nữa.</p>
+                <?php endif; ?>
                 <p class="admin-status-current">Hiện tại: <strong><?php echo htmlspecialchars(orderFulfillmentStatusLabel((string) $order['fulfillment_status'])); ?></strong></p>
                 <?php
                 $canMarkDelivered = !$orderLocked
