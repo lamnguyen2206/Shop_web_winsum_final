@@ -414,7 +414,7 @@ function orderSetPaymentStatusInTransaction(mysqli $conn, int $orderId, string $
 
     $stmtPay = $conn->prepare('UPDATE order_payments SET status = ? WHERE order_id = ? ORDER BY id DESC LIMIT 1');
     if ($stmtPay) {
-        $payStatus = $newStatus === 'paid' ? 'paid' : ($newStatus === 'refunded' ? 'refunded' : 'pending');
+        $payStatus = $newStatus === 'paid' ? 'success' : ($newStatus === 'refunded' ? 'refunded' : ($newStatus === 'failed' ? 'failed' : 'pending'));
         $stmtPay->bind_param('si', $payStatus, $orderId);
         $stmtPay->execute();
         $stmtPay->close();
@@ -836,7 +836,7 @@ function orderUpdatePaymentStatus(mysqli $conn, int $orderId, string $newStatus,
 
         $stmtPay = $conn->prepare('UPDATE order_payments SET status = ? WHERE order_id = ? ORDER BY id DESC LIMIT 1');
         if ($stmtPay) {
-            $payStatus = $newStatus === 'paid' ? 'paid' : ($newStatus === 'refunded' ? 'refunded' : 'pending');
+            $payStatus = $newStatus === 'paid' ? 'success' : ($newStatus === 'refunded' ? 'refunded' : ($newStatus === 'failed' ? 'failed' : 'pending'));
             $stmtPay->bind_param('si', $payStatus, $orderId);
             $stmtPay->execute();
             $stmtPay->close();
@@ -980,7 +980,7 @@ function orderIsCodPaymentMethod(string $code): bool
 
 function orderIsPrepaidPaymentMethod(string $code): bool
 {
-    // VietQR / chuyển khoản: khách xác nhận qua nút demo sau khi quét QR (confirm_vietqr_demo).
+    // VietQR: đơn giữ unpaid cho đến khi shop đối soát và gọi vietqrConfirmReceived().
     // COD: admin cập nhật paid thủ công sau khi giao hàng.
     return false;
 }

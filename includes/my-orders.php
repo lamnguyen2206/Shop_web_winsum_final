@@ -4,26 +4,15 @@ require_once __DIR__ . '/order-repository.php';
 
 $currentCustomer = customerCurrent($conn);
 $orders = [];
-$paymentSuccessCode = '';
 
 if ($currentCustomer) {
     $orders = orderGetCustomerOrders($conn, (int) $currentCustomer['id']);
-}
-
-if (($_GET['payment'] ?? '') === 'success') {
-    $paymentSuccessCode = trim((string) ($_GET['code'] ?? ''));
 }
 ?>
 
 <section class="container orders-page">
     <p class="breadcrumb"><a href="<?php echo e(app_url('home')); ?>">Trang chủ</a> / <span>Đơn hàng của tôi</span></p>
     <h1>Đơn hàng của tôi</h1>
-
-    <?php if ($paymentSuccessCode !== ''): ?>
-        <p class="checkout-notice success">
-            Thanh toán VietQR demo thành công cho đơn #<?php echo e($paymentSuccessCode); ?>.
-        </p>
-    <?php endif; ?>
 
     <?php if (!$currentCustomer): ?>
         <div class="empty-state">

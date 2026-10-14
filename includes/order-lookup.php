@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/order-repository.php';
+require_once __DIR__ . '/vietqr.php';
 require_once __DIR__ . '/csrf.php';
 require_once __DIR__ . '/customer-auth.php';
 
@@ -12,7 +13,6 @@ $lookupCode = trim((string) ($_GET['code'] ?? ''));
 $lookupPhone = trim((string) ($_GET['phone'] ?? ''));
 $lookupNotice = trim((string) ($_GET['msg'] ?? ''));
 $lookupSuccess = isset($_GET['ok']) && (string) $_GET['ok'] === '1';
-$paymentSuccess = (string) ($_GET['payment'] ?? '') === 'success';
 $lookupOrder = null;
 $lookupError = '';
 
@@ -35,9 +35,6 @@ if ($lookupCode !== '' || $lookupPhone !== '') {
     <p class="breadcrumb"><a href="<?php echo e(app_url('home')); ?>">Trang chủ</a> / <span>Tra cứu đơn hàng</span></p>
     <h1>Tra cứu đơn hàng</h1>
 
-    <?php if ($paymentSuccess && $lookupCode !== ''): ?>
-        <p class="checkout-notice success">Thanh toán VietQR demo thành công cho đơn #<?php echo e($lookupCode); ?>.</p>
-    <?php endif; ?>
     <?php if ($lookupNotice !== ''): ?>
         <p class="checkout-notice <?php echo $lookupSuccess ? 'success' : 'error'; ?>"><?php echo e($lookupNotice); ?></p>
     <?php endif; ?>
@@ -79,6 +76,14 @@ if ($lookupCode !== '' || $lookupPhone !== '') {
                 <p><strong>Thanh toán:</strong> <?php echo e((string) ($lookupOrder['payment']['payment_method_name'] ?? '')); ?></p>
             </article>
         </div>
+
+        <?php if (vietqrOrderAwaitingPayment($lookupOrder)): ?>
+            <?php
+            $vietQrOrderCode = (string) $lookupOrder['order_code'];
+            $vietQrAmount = (int) round((float) $lookupOrder['grand_total']);
+            include __DIR__ . '/views/partials/vietqr-box.php';
+            ?>
+        <?php endif; ?>
 
         <div class="orders-table order-items-table">
             <div class="orders-head">

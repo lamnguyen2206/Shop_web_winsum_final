@@ -146,7 +146,7 @@ View không tồn tại → fallback `home` + banner 404 (`includes/errors/404.p
 
 | Handler | File | Ví dụ action |
 | --- | --- | --- |
-| Storefront | `includes/handlers/storefront-post.php` | Thêm giỏ, checkout, hủy đơn, VietQR demo |
+| Storefront | `includes/handlers/storefront-post.php` | Thêm giỏ, checkout, hủy đơn |
 | Admin | `includes/admin-post.php` | CRUD SP, cập nhật đơn, duyệt hoàn |
 | Auth | `includes/customer-auth-post.php` | Đăng ký, đăng nhập, đăng xuất |
 | Blog editor | `includes/blog-editor-handler.php` | Lưu / upload ảnh blog |
@@ -205,7 +205,7 @@ Mã đơn: `WS` + `md` + 4 số ngẫu nhiên (ví dụ `WS06161234`).
 | Code | Hiển thị | Hành vi |
 | --- | --- | --- |
 | `cod` | Thanh toán khi nhận hàng | `unpaid` → admin cập nhật `paid` sau giao |
-| `bank_transfer` | Chuyển khoản VietQR | `unpaid` → khách bấm **«Tôi đã thanh toán»** (`confirm_vietqr_demo`) → `paid` |
+| `bank_transfer` | Chuyển khoản VietQR | `unpaid` cho đến khi admin đối soát sao kê và bấm **Xác nhận đã nhận chuyển khoản**. QR tạo từ `config/vietqr.php` (số tiền + mã đơn). |
 
 ### Vận chuyển (seed `shipping_methods`)
 
@@ -265,7 +265,7 @@ Theo dõi thêm: `payment_status` (`unpaid` / `paid` / `refunded`), `fulfillment
 | `auth_flash`, `page_flash` | auth / flash | Thông báo |
 | `login_attempts` | `customer-auth.php` | Khóa 5 lần sai / 15 phút |
 | `last_order_code`, `last_order_phone` | checkout | Tra cứu guest |
-| `checkout_result` | checkout | Kết quả / VietQR demo |
+| `checkout_result` | checkout | Kết quả đặt hàng và mã VietQR |
 | `admin_tasks_seen` | `admin-tasks.php` | Banner nhắc việc admin |
 
 ---
@@ -338,7 +338,7 @@ webwinsum/
 
 ## Hạn chế
 
-- VietQR chỉ demo — không webhook ngân hàng  
+- VietQR hiện mã chuyển khoản thật theo tài khoản trong `config/vietqr.php`. Chưa có webhook ngân hàng: shop xác nhận tay sau khi tiền vào. Khách không tự đánh dấu đã trả  
 - Đơn mới vào thẳng `shipped`, không có `pending` / `processing`  
 - Chưa email/SMS  
 - Chưa test tự động  

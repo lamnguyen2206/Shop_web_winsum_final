@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/order-repository.php';
 require_once __DIR__ . '/return-repository.php';
+require_once __DIR__ . '/vietqr.php';
 
 $orderCode = trim((string) ($_GET['code'] ?? ''));
 $order = $orderCode !== '' ? orderGetOrderDetailByCode($conn, $orderCode) : null;
@@ -106,8 +107,14 @@ $paymentMethodCode = $order ? (string) ($order['payment']['payment_method_code']
                     <p class="admin-muted">Đơn COD: chỉ cập nhật thanh toán sau khi bấm «Xác nhận đã giao».</p>
                 <?php elseif (($order['payment_status'] ?? '') === 'refunded'): ?>
                     <p class="admin-muted">Trạng thái hoàn tiền được cập nhật tự động từ mục Hoàn hàng.</p>
-                <?php elseif (orderIsPrepaidPaymentMethod($paymentMethodCode)): ?>
-                    <p class="admin-muted">Đơn chuyển khoản: tự động đánh dấu đã thanh toán khi khách đặt hàng.</p>
+                <?php elseif (vietqrOrderAwaitingPayment($order)): ?>
+                    <form method="post" action="<?php echo e(app_url('admin-order-detail', ['code' => $order['order_code']])); ?>" class="admin-status-panel-form-inner">
+                        <?php echo csrfField(); ?>
+                        <input type="hidden" name="action" value="confirm_vietqr_payment">
+                        <input type="hidden" name="order_id" value="<?php echo (int) $order['id']; ?>">
+                        <button type="submit" class="admin-btn-save">Xác nhận đã nhận chuyển khoản</button>
+                    </form>
+                    <p class="admin-muted">Chỉ bấm sau khi sao kê có giao dịch đúng số tiền và nội dung là mã đơn.</p>
                 <?php elseif (orderPaymentBlocksAdminChange($order)): ?>
                     <p class="admin-muted">Không thể chỉnh sửa khi đơn đang trong quy trình hoàn hàng hoặc đã kết thúc.</p>
                 <?php else: ?>
