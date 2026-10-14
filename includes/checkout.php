@@ -83,61 +83,40 @@ $checkoutCanSubmit = !$checkoutBlockedAdmin
         <?php
         $registerPhone = trim((string) ($_SESSION['last_order_phone'] ?? ''));
         $registerParams = $registerPhone !== '' ? ['phone' => $registerPhone] : [];
-        $showVietQrDemo = $orderCode !== ''
+        require_once __DIR__ . '/vietqr.php';
+        $showVietQr = $orderCode !== ''
             && $orderTotal > 0
-            && in_array($orderPaymentCode, ['bank_transfer', 'vietqr'], true);
-        $vietQrBankCode = 'MB';
-        $vietQrAccountNumber = '0123456789';
-        $vietQrAccountName = 'WINSUM HOME';
-        $vietQrTransferContent = $orderCode;
-        $vietQrImageUrl = 'https://img.vietqr.io/image/'
-            . rawurlencode($vietQrBankCode)
-            . '-'
-            . rawurlencode($vietQrAccountNumber)
-            . '-compact2.png?'
-            . http_build_query([
-                'amount' => $orderTotal,
-                'addInfo' => $vietQrTransferContent,
-                'accountName' => $vietQrAccountName,
-            ]);
+            && vietqrIsTransferMethod($orderPaymentCode);
         ?>
         <div class="checkout-success-box">
             <p>Cảm ơn bạn! Đơn hàng đã được ghi nhận.</p>
-            <?php if ($showVietQrDemo): ?>
-                <div class="vietqr-demo-box">
-                    <h2>Thanh toán VietQR</h2>
-                    <p>Quét mã QR để chuyển khoản, sau đó bấm “Tôi đã thanh toán” để hoàn tất demo.</p>
-                    <img src="<?php echo e($vietQrImageUrl); ?>" alt="Mã QR thanh toán VietQR cho đơn <?php echo e($orderCode); ?>">
-                    <dl>
-                        <div>
-                            <dt>Ngân hàng</dt>
-                            <dd><?php echo e($vietQrBankCode); ?></dd>
-                        </div>
-                        <div>
-                            <dt>Số tài khoản</dt>
-                            <dd><?php echo e($vietQrAccountNumber); ?></dd>
-                        </div>
-                        <div>
-                            <dt>Chủ tài khoản</dt>
-                            <dd><?php echo e($vietQrAccountName); ?></dd>
-                        </div>
-                        <div>
-                            <dt>Số tiền</dt>
-                            <dd><?php echo number_format($orderTotal, 0, ',', '.'); ?>đ</dd>
-                        </div>
-                        <div>
-                            <dt>Nội dung</dt>
-                            <dd><?php echo e($vietQrTransferContent); ?></dd>
-                        </div>
-                    </dl>
-                    <form method="post" action="<?php echo e(app_url('checkout')); ?>" class="vietqr-demo-form">
-                        <?php echo csrfField(); ?>
-                        <input type="hidden" name="action" value="confirm_vietqr_demo">
-                        <input type="hidden" name="order_code" value="<?php echo e($orderCode); ?>">
-                        <button type="submit">Tôi đã thanh toán</button>
-                    </form>
-                    <small>Chức năng này dùng cho demo đồ án. Bản thực tế cần webhook ngân hàng để xác nhận tự động.</small>
-                </div>
+            <?php
+            $placedOrder = null;
+            if ($orderCode !== '') {
+                if ($currentCustomer) {
+                    $placedOrder = orderGetCustomerOrderDetailByCode($conn, (int) $currentCustomer['id'], $orderCode);
+                } elseif ($registerPhone !== '') {
+                    $placedOrder = orderGetOrderDetailByCodeAndPhone($conn, $orderCode, $registerPhone);
+                }
+            }
+            ?>
+            <?php if ($showVietQr): ?>
+                <?php
+                $vietQrOrderCode = $orderCode;
+                $vietQrAmount = $orderTotal;
+                include __DIR__ . '/views/partials/vietqr-box.php';
+                ?>
+            <?php endif; ?>
+            <?php if (is_array($placedOrder)): ?>
+                <?php
+                $paymentSwitchOrder = $placedOrder;
+                $paymentSwitchPostUrl = $currentCustomer
+                    ? app_url('order-detail', ['code' => $orderCode])
+                    : app_url('order-lookup');
+                $paymentSwitchMode = $currentCustomer ? 'account' : 'guest';
+                $paymentSwitchPhone = $registerPhone;
+                include __DIR__ . '/views/partials/payment-method-switch.php';
+                ?>
             <?php elseif ($orderPaymentName !== ''): ?>
                 <p>Phương thức thanh toán: <?php echo e($orderPaymentName); ?></p>
             <?php endif; ?>

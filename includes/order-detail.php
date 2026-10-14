@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/customer-auth.php';
 require_once __DIR__ . '/order-repository.php';
+require_once __DIR__ . '/vietqr.php';
 require_once __DIR__ . '/return-repository.php';
 require_once __DIR__ . '/csrf.php';
 
@@ -48,7 +49,7 @@ if ($currentCustomer && $orderCode !== '') {
                 <h2>Thông tin đơn #<?php echo htmlspecialchars($order['order_code']); ?></h2>
                 <p><strong>Ngày đặt:</strong> <?php echo htmlspecialchars((string) $order['ordered_at']); ?></p>
                 <p><strong>Trạng thái:</strong> <?php echo htmlspecialchars(orderStatusLabel((string) $order['status'])); ?></p>
-                <p><strong>Thanh toán:</strong> <?php echo htmlspecialchars(orderPaymentStatusLabel((string) ($order['payment']['status'] ?? $order['payment_status']))); ?></p>
+                <p><strong>Thanh toán:</strong> <?php echo htmlspecialchars(orderPaymentStatusLabel((string) $order['payment_status'])); ?></p>
                 <p><strong>Vận chuyển:</strong> <?php echo htmlspecialchars(orderFulfillmentStatusLabel((string) $order['fulfillment_status'])); ?></p>
             </article>
 
@@ -61,6 +62,22 @@ if ($currentCustomer && $orderCode !== '') {
                 <p><strong>Thanh toán:</strong> <?php echo htmlspecialchars((string) ($order['payment']['payment_method_name'] ?? '')); ?></p>
             </article>
         </div>
+
+        <?php
+        $paymentSwitchOrder = $order;
+        $paymentSwitchPostUrl = app_url('order-detail', ['code' => (string) $order['order_code']]);
+        $paymentSwitchMode = 'account';
+        include __DIR__ . '/views/partials/payment-method-switch.php';
+        ?>
+
+        <?php if (vietqrOrderAwaitingPayment($order)): ?>
+            <?php
+            require_once __DIR__ . '/vietqr.php';
+            $vietQrOrderCode = (string) $order['order_code'];
+            $vietQrAmount = (int) round((float) $order['grand_total']);
+            include __DIR__ . '/views/partials/vietqr-box.php';
+            ?>
+        <?php endif; ?>
 
         <div class="orders-table order-items-table">
             <div class="orders-head">

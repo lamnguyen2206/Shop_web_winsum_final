@@ -1052,27 +1052,29 @@ body.coupon-modal-open {
     font-weight: 600;
 }
 
-.vietqr-demo-box {
+.vietqr-box {
     width: min(100%, 420px);
+    margin: 0 auto 20px;
     padding: 20px;
+    text-align: center;
     border: 1px solid #bae6fd;
     border-radius: var(--radius-lg, 16px);
     background: #f0f9ff;
     color: #0f172a;
 }
 
-.vietqr-demo-box h2 {
+.vietqr-box h2 {
     margin: 0 0 8px;
     color: #075985;
 }
 
-.vietqr-demo-box p {
+.vietqr-box p {
     margin-bottom: 12px;
     color: #0f172a;
     font-weight: 500;
 }
 
-.vietqr-demo-box img {
+.vietqr-box img {
     width: min(100%, 260px);
     height: auto;
     border-radius: 12px;
@@ -1081,14 +1083,14 @@ body.coupon-modal-open {
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
 }
 
-.vietqr-demo-box dl {
+.vietqr-box dl {
     display: grid;
     gap: 8px;
     margin: 16px 0;
     text-align: left;
 }
 
-.vietqr-demo-box dl div {
+.vietqr-box dl div {
     display: flex;
     justify-content: space-between;
     gap: 12px;
@@ -1096,29 +1098,42 @@ body.coupon-modal-open {
     padding-bottom: 6px;
 }
 
-.vietqr-demo-box dt {
+.vietqr-box dt {
     color: #64748b;
     font-weight: 600;
 }
 
-.vietqr-demo-box dd {
+.vietqr-box dd {
     margin: 0;
     text-align: right;
     font-weight: 700;
 }
 
-.vietqr-demo-form button {
-    width: 100%;
-    height: 46px;
-    border: 0;
-    border-radius: var(--radius-md, 10px);
-    background: var(--color-accent);
-    color: #fff;
-    font-weight: 700;
-    cursor: pointer;
+.payment-switch-form {
+    width: min(100%, 420px);
+    margin: 0 auto 20px;
+    padding: 16px;
+    display: grid;
+    gap: 10px;
+    text-align: left;
+    border: 1px solid var(--color-border, #e5e7eb);
+    border-radius: var(--radius-lg, 16px);
+    background: #fff;
 }
 
-.vietqr-demo-box small {
+.payment-switch-form select,
+.payment-switch-form button {
+    width: 100%;
+}
+
+.payment-switch-note {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.92rem;
+    font-weight: 500;
+}
+
+.vietqr-box small {
     display: block;
     margin-top: 10px;
     color: #64748b;

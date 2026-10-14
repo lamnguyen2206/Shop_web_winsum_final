@@ -103,7 +103,7 @@ function storefrontHandleBlogPostPost(mysqli $conn): void
 function storefrontHandleOrderDetailPost(mysqli $conn): void
 {
     $action = (string) ($_POST['action'] ?? '');
-    if (!in_array($action, ['cancel_order', 'confirm_refund_received'], true)) {
+    if (!in_array($action, ['cancel_order', 'confirm_refund_received', 'change_payment_method'], true)) {
         return;
     }
 
@@ -124,6 +124,11 @@ function storefrontHandleOrderDetailPost(mysqli $conn): void
             redirect(app_url('orders'));
         }
         $result = returnCustomerConfirmRefund($conn, (int) $order['id'], (int) $customer['id']);
+        redirect(app_url('order-detail', ['code' => $code, 'msg' => $result['message'], 'ok' => $result['ok'] ? '1' : '0']));
+    }
+
+    if ($action === 'change_payment_method') {
+        $result = orderCustomerChangePaymentForAccount($conn, (int) $customer['id'], $code, (int) ($_POST['payment_method_id'] ?? 0));
         redirect(app_url('order-detail', ['code' => $code, 'msg' => $result['message'], 'ok' => $result['ok'] ? '1' : '0']));
     }
 
@@ -175,7 +180,8 @@ function storefrontHandleOrderReturnPost(mysqli $conn): void
 
 function storefrontHandleOrderLookupPost(mysqli $conn): void
 {
-    if (($_POST['action'] ?? '') !== 'cancel_guest_order') {
+    $action = (string) ($_POST['action'] ?? '');
+    if (!in_array($action, ['cancel_guest_order', 'change_guest_payment'], true)) {
         return;
     }
 
@@ -207,7 +213,11 @@ function storefrontHandleOrderLookupPost(mysqli $conn): void
     }
 
     $phone = phoneNormalize($phone);
-    $result = orderCustomerCancelByCodeAndPhone($conn, $code, $phone);
+    if ($action === 'change_guest_payment') {
+        $result = orderCustomerChangePaymentByCodeAndPhone($conn, $code, $phone, (int) ($_POST['payment_method_id'] ?? 0));
+    } else {
+        $result = orderCustomerCancelByCodeAndPhone($conn, $code, $phone);
+    }
     redirect(app_url('order-lookup', [
         'code' => $code,
         'phone' => $phone,
@@ -435,12 +445,6 @@ function storefrontHandleProductPost(mysqli $conn): void
 
 function storefrontHandleCheckoutPost(mysqli $conn): void
 {
-    $action = (string) ($_POST['action'] ?? '');
-    if ($action === 'confirm_vietqr_demo') {
-        storefrontHandleVietQrDemoConfirm($conn);
-        return;
-    }
-
     if (!isset($_POST['checkout_submit'])) {
         return;
     }
@@ -598,94 +602,6 @@ function storefrontBuildCheckoutAddress(
     }
 
     return implode(', ', $parts);
-}
-
-function storefrontHandleVietQrDemoConfirm(mysqli $conn): void
-{
-    require_once __DIR__ . '/../order-repository.php';
-    require_once __DIR__ . '/../customer-auth.php';
-    require_once __DIR__ . '/../csrf.php';
-
-    $orderCode = trim((string) ($_POST['order_code'] ?? ''));
-    $sessionOrderCode = trim((string) ($_SESSION['last_order_code'] ?? ''));
-    $sessionOrderPhone = trim((string) ($_SESSION['last_order_phone'] ?? ''));
-
-    if (!csrfValidate()) {
-        $_SESSION['checkout_result'] = [
-            'placed' => true,
-            'message' => 'Phiên làm việc không hợp lệ. Vui lòng tải lại trang và thử lại.',
-            'code' => $orderCode,
-        ];
-        redirect(app_url('checkout'));
-    }
-
-    $currentCustomer = customerCurrent($conn);
-    $order = null;
-    if ($currentCustomer) {
-        $order = orderGetCustomerOrderDetailByCode($conn, (int) $currentCustomer['id'], $orderCode);
-    } elseif ($orderCode !== '' && $orderCode === $sessionOrderCode && $sessionOrderPhone !== '') {
-        $order = orderGetOrderDetailByCodeAndPhone($conn, $orderCode, $sessionOrderPhone);
-    }
-
-    if (!$order) {
-        $_SESSION['checkout_result'] = [
-            'placed' => true,
-            'message' => 'Không tìm thấy đơn hàng để xác nhận thanh toán.',
-            'code' => $orderCode,
-        ];
-        redirect(app_url('checkout'));
-    }
-
-    if (
-        in_array((string) ($order['status'] ?? ''), ['cancelled', 'returned'], true)
-        || in_array((string) ($order['fulfillment_status'] ?? ''), ['cancelled', 'returned'], true)
-    ) {
-        $_SESSION['checkout_result'] = [
-            'placed' => true,
-            'message' => 'Đơn hàng đã hủy hoặc hoàn trả nên không thể xác nhận thanh toán.',
-            'code' => $orderCode,
-            'total' => (int) round((float) ($order['grand_total'] ?? 0)),
-        ];
-        redirect(app_url('checkout'));
-    }
-
-    $paymentCode = (string) ($order['payment']['payment_method_code'] ?? '');
-    if (!in_array($paymentCode, ['bank_transfer', 'vietqr'], true)) {
-        $_SESSION['checkout_result'] = [
-            'placed' => true,
-            'message' => 'Đơn hàng này không sử dụng phương thức thanh toán VietQR.',
-            'code' => $orderCode,
-        ];
-        redirect(app_url('checkout'));
-    }
-
-    if ((string) ($order['payment_status'] ?? '') !== 'paid') {
-        $updated = orderUpdatePaymentStatus($conn, (int) $order['id'], 'paid', 'vietqr_demo');
-        if (!$updated) {
-            $_SESSION['checkout_result'] = [
-                'placed' => true,
-                'message' => 'Không thể cập nhật trạng thái thanh toán. Vui lòng thử lại.',
-                'code' => $orderCode,
-                'total' => (int) round((float) ($order['grand_total'] ?? 0)),
-                'payment_method_code' => $paymentCode,
-                'payment_method_name' => (string) ($order['payment']['payment_method_name'] ?? ''),
-            ];
-            redirect(app_url('checkout'));
-        }
-    }
-
-    if ($currentCustomer) {
-        redirect(app_url('orders', [
-            'payment' => 'success',
-            'code' => $orderCode,
-        ]));
-    }
-
-    redirect(app_url('order-lookup', [
-        'payment' => 'success',
-        'code' => $orderCode,
-        'phone' => $sessionOrderPhone,
-    ]));
 }
 
 function storefrontHandleAccountPost(mysqli $conn): void

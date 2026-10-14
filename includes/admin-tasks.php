@@ -23,8 +23,10 @@ function adminTasksFetchCounts(mysqli $conn): array
         'returns_pending' => 0,
         'returns_accepted' => 0,
         'returns_goods_received' => 0,
+        'orders_pending' => 0,
         'orders_shipped' => 0,
         'orders_cod_unpaid' => 0,
+        'orders_vietqr_unpaid' => 0,
         'inventory_low' => 0,
     ];
 
@@ -32,8 +34,17 @@ function adminTasksFetchCounts(mysqli $conn): array
         'returns_pending' => "SELECT COUNT(*) AS c FROM order_return_requests WHERE status = 'pending'",
         'returns_accepted' => "SELECT COUNT(*) AS c FROM order_return_requests WHERE status = 'accepted'",
         'returns_goods_received' => "SELECT COUNT(*) AS c FROM order_return_requests WHERE status = 'goods_received'",
+        'orders_pending' => "SELECT COUNT(*) AS c FROM orders WHERE status = 'pending'",
         'orders_shipped' => "SELECT COUNT(*) AS c FROM orders WHERE status = 'shipped'",
         'orders_cod_unpaid' => "SELECT COUNT(*) AS c FROM orders WHERE status = 'delivered' AND payment_status = 'unpaid'",
+        'orders_vietqr_unpaid' => "SELECT COUNT(*) AS c FROM orders o
+            WHERE o.payment_status = 'unpaid'
+              AND o.status NOT IN ('cancelled', 'returned', 'return_pending', 'return_accepted', 'return_received')
+              AND EXISTS (
+                  SELECT 1 FROM order_payments op
+                  INNER JOIN payment_methods pm ON pm.id = op.payment_method_id
+                  WHERE op.order_id = o.id AND pm.code IN ('bank_transfer', 'vietqr')
+              )",
     ];
 
     returnEnsureSchema($conn);
@@ -67,6 +78,12 @@ function adminTasksFetchCounts(mysqli $conn): array
             'nav' => 'admin-returns',
             'priority' => 'high',
         ],
+        'orders_pending' => [
+            'label' => 'đơn chờ xử lý',
+            'url' => app_url('admin-orders'),
+            'nav' => 'admin-orders',
+            'priority' => 'high',
+        ],
         'orders_shipped' => [
             'label' => 'đơn đang giao cần cập nhật',
             'url' => app_url('admin-orders'),
@@ -75,6 +92,12 @@ function adminTasksFetchCounts(mysqli $conn): array
         ],
         'orders_cod_unpaid' => [
             'label' => 'đơn COD đã giao, chưa xác nhận thu tiền',
+            'url' => app_url('admin-orders'),
+            'nav' => 'admin-orders',
+            'priority' => 'high',
+        ],
+        'orders_vietqr_unpaid' => [
+            'label' => 'đơn VietQR chưa nhận tiền',
             'url' => app_url('admin-orders'),
             'nav' => 'admin-orders',
             'priority' => 'high',
