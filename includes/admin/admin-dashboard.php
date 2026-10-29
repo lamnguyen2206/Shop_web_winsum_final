@@ -24,7 +24,21 @@ $customerOrders = $customerOrderSearch !== ''
         <h1>Bảng quản trị Winsum Home</h1>
     </div>
 
+    <?php if (isset($_GET['msg']) && trim((string) $_GET['msg']) !== ''): ?>
+        <p class="admin-notice<?php echo (($_GET['msg_ok'] ?? '') === '1') ? ' admin-notice--ok' : ' admin-notice--err'; ?>">
+            <?php echo e(trim((string) $_GET['msg'])); ?>
+        </p>
+    <?php endif; ?>
+
     <?php include __DIR__ . '/../admin-nav.php'; ?>
+
+    <?php
+    require_once __DIR__ . '/../helpers.php';
+    require_once __DIR__ . '/../csrf.php';
+    $bank = shopBankAccount();
+    $paymentAccountReturnView = 'admin-dashboard';
+    include __DIR__ . '/partials/payment-account-form.php';
+    ?>
 
     <?php if (!empty($adminTasksPayload)): ?>
         <?php include __DIR__ . '/partials/task-panel.php'; ?>

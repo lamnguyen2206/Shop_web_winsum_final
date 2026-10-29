@@ -37,6 +37,11 @@ function adminHandlePost(mysqli $conn, string $view): void
         return;
     }
 
+    if ((string) ($_POST['action'] ?? '') === 'save_shop_bank' && csrfValidate()) {
+        adminHandlePaymentAccountPost($conn);
+        return;
+    }
+
     $customerAdminActions = ['toggle_customer_block', 'update_customer_status'];
     if (in_array($action, $customerAdminActions, true)) {
         adminHandleCustomersPost($conn);
@@ -87,7 +92,11 @@ function adminHandlePaymentAccountPost(mysqli $conn): void
         (string) ($_POST['account_number'] ?? ''),
         (string) ($_POST['account_name'] ?? '')
     );
-    redirect(app_url('admin-payment-account', [
+    $returnView = (string) ($_POST['return_view'] ?? 'admin-payment-account');
+    if (!in_array($returnView, ['admin-dashboard', 'admin-payment-account'], true)) {
+        $returnView = 'admin-payment-account';
+    }
+    redirect(app_url($returnView, [
         'msg' => $result['message'],
         'msg_ok' => $result['ok'] ? '1' : '0',
     ]));

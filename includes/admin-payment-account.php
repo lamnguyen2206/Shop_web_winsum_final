@@ -23,20 +23,8 @@ $bank = shopBankAccount();
         </p>
     <?php endif; ?>
 
-    <form method="post" action="<?php echo e(app_url('admin-payment-account')); ?>" class="admin-panel checkout-form">
-        <?php echo csrfField(); ?>
-        <input type="hidden" name="action" value="save_shop_bank">
-        <p>Số này hiện trên trang thanh toán khi khách chọn chuyển khoản. Đơn đã đặt không đổi số tiền.</p>
-
-        <label for="bank_code">Mã ngân hàng</label>
-        <input id="bank_code" name="bank_code" required maxlength="20" value="<?php echo e($bank['code']); ?>" placeholder="MB, VCB, BIDV, TCB">
-
-        <label for="account_number">Số tài khoản</label>
-        <input id="account_number" name="account_number" required inputmode="numeric" maxlength="19" value="<?php echo e($bank['account_number']); ?>" placeholder="Chỉ nhập chữ số">
-
-        <label for="account_name">Tên chủ tài khoản</label>
-        <input id="account_name" name="account_name" required maxlength="120" value="<?php echo e($bank['account_name']); ?>" placeholder="WINSUM HOME">
-
-        <button type="submit">Lưu tài khoản nhận tiền</button>
-    </form>
+    <?php
+    $paymentAccountReturnView = 'admin-payment-account';
+    include __DIR__ . '/admin/partials/payment-account-form.php';
+    ?>
 </section>
