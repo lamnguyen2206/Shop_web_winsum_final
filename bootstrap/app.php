@@ -2,11 +2,25 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../config/database.php';
+
+error_reporting(E_ALL);
+ini_set('display_errors', appDebug() ? '1' : '0');
+ini_set('log_errors', '1');
+
 if (session_status() !== PHP_SESSION_ACTIVE) {
+    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => $https,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     session_start();
 }
 
-require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/helpers.php';
 require_once __DIR__ . '/../includes/flash.php';
 require_once __DIR__ . '/../includes/routes.php';
@@ -55,10 +69,10 @@ if ($requestedView === 'admin-login') {
         redirect(app_url('admin-dashboard'));
     }
     $_SESSION['auth_flash'] = [
-        'message' => 'Đăng nhập quản trị: dùng admin / admin123 tại form Đăng nhập trên trang chủ.',
+        'message' => 'Đăng nhập quản trị bằng SĐT hoặc email của tài khoản admin tại form Đăng nhập.',
         'success' => false,
         'open' => 'login',
-        'prefill' => ['identifier' => 'admin'],
+        'prefill' => [],
     ];
     redirect(auth_login_url('home'));
 }

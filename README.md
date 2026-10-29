@@ -1,8 +1,8 @@
 # Winsum Home
 
-Website bán đèn trang trí và nội thất — đồ án tốt nghiệp viết bằng **PHP thuần + MySQL**, chạy trên **XAMPP**, không framework.
+Website bán đèn trang trí và nội thất — đồ án tốt nghiệp viết bằng **PHP thuần + MySQL**, không framework. Chạy được trên XAMPP (local) và shared hosting PHP 8 + MySQL (Hostinger, cPanel…).
 
-**Local:** [http://localhost/webwinsum](http://localhost/webwinsum)
+**Local:** `http://localhost/<thư-mục-mã-nguồn>` · **Hosting:** xem mục [Triển khai lên hosting](#triển-khai-lên-hosting-hostinger)
 
 ---
 
@@ -13,11 +13,11 @@ Website bán đèn trang trí và nội thất — đồ án tốt nghiệp vi�
 | **Storefront** | `includes/home.php`, `catalog.php`, `cart.php`, `checkout.php`, … | Xem SP, giỏ hàng, đặt hàng, tra cứu đơn, hoàn hàng, đánh giá, blog |
 | **Admin** | `includes/admin/*.php`, `admin-*.php` | Dashboard, SP, đơn, hoàn trả, KH, coupon, đánh giá, blog |
 
-Mọi request đi qua **`index.php?view=...`**. Logic khởi động nằm ở `bootstrap/app.php`: session, kết nối DB, migrate schema, xử lý POST, kiểm tra quyền admin.
+Mọi request đi qua **`index.php?view=...`**. Logic khởi động nằm ở `bootstrap/app.php`: kết nối DB, session, xử lý POST, kiểm tra quyền admin.
 
 ```
 index.php
-  └─ bootstrap/app.php          session, *EnsureSchema(), POST handlers
+  └─ bootstrap/app.php          kết nối DB, session, POST handlers
        └─ includes/routes.php  map view → file PHP + CSS/JS
             └─ layout + view
 ```
@@ -30,13 +30,13 @@ index.php
 | --- | --- |
 | PHP | ≥ 8.0, `declare(strict_types=1)` |
 | MySQL | DB `winsumwebfinal`, charset `utf8mb4` (`config/database.php`) |
-| Apache | XAMPP |
+| Web server | Apache / LiteSpeed (`.htaccess` chặn `config/`, `sql/`, `scripts/`, `tests/`, `storage/`) |
 | Frontend | HTML/CSS/JS thuần; design tokens trong `assets/css/style.css` |
 | Biểu đồ admin | Chart.js 4.4.7 (CDN, chỉ `admin-dashboard`) |
 
 ---
 
-## Cài đặt
+## Cài đặt local (XAMPP)
 
 ### 1. Copy mã nguồn
 
@@ -49,16 +49,15 @@ C:\xampp\htdocs\webwinsum
 ```bash
 mysql -u root -e "CREATE DATABASE IF NOT EXISTS winsumwebfinal CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 mysql -u root winsumwebfinal < winsumwebfinal.sql
-php scripts/migrate.php
 ```
 
-`scripts/migrate.php` thêm bảng giỏ hàng, khóa đăng nhập, dòng hoàn hàng và các cột schema còn thiếu. Chạy một lần. Lần sau script báo đã áp dụng.
+Hoặc phpMyAdmin → tạo DB `winsumwebfinal` → Import → `winsumwebfinal.sql`.
 
-Hoặc phpMyAdmin → Import → `winsumwebfinal.sql`, rồi chạy `php scripts/migrate.php`.
+`winsumwebfinal.sql` đã chứa đủ schema mới (giỏ hàng, khóa đăng nhập, dòng hoàn hàng, tài khoản nhận tiền) và tự đánh dấu các migration là đã áp dụng. `php scripts/migrate.php` chỉ cần chạy khi nâng cấp một DB cũ từ bản trước.
 
-### 3. Cấu hình DB
+### 3. Cấu hình
 
-Copy `config/local.example.php` thành `config/local.php` rồi điền mật khẩu MySQL, tài khoản quản trị và số tài khoản nhận chuyển khoản của cửa hàng. Ứng dụng đọc file đó qua `config/database.php`. Không commit `config/local.php`.
+Copy `config/local.example.php` thành `config/local.php` rồi điền mật khẩu MySQL, tài khoản quản trị và số tài khoản nhận chuyển khoản. Ứng dụng đọc file đó qua `config/database.php`. Không commit `config/local.php`. Ở local có thể đặt `'app' => ['debug' => true]` để hiện lỗi PHP.
 
 ### 4. Chạy
 
@@ -67,7 +66,52 @@ Copy `config/local.example.php` thành `config/local.php` rồi điền mật kh
 
 ### 5. Bootstrap lần đầu
 
-`bootstrap/app.php` tạo tài khoản admin nếu chưa có, dùng mật khẩu trong `config/local.php` (mặc định xem `config/local.example.php`). Schema không còn bị `ALTER` trên mỗi request.
+`bootstrap/app.php` tạo tài khoản admin nếu chưa có, dùng mật khẩu trong `config/local.php` (mặc định xem `config/local.example.php`). Schema không bị `ALTER` trên mỗi request.
+
+---
+
+## Triển khai lên hosting (Hostinger)
+
+Yêu cầu: gói hosting có **PHP ≥ 8.0** (bật `mysqli`, `mbstring`, `fileinfo`) và **MySQL/MariaDB**. Hướng dẫn dưới dùng hPanel của Hostinger; cPanel tương tự.
+
+### 1. Tạo database
+
+hPanel → **Databases → MySQL Databases** → tạo database, user, mật khẩu. Ghi lại 3 giá trị (tên DB/user có tiền tố, ví dụ `u123456789_winsum`). Host là `localhost`.
+
+### 2. Import schema + dữ liệu mẫu
+
+hPanel → **Databases → phpMyAdmin** → chọn DB vừa tạo → **Import** → chọn `winsumwebfinal.sql` → Go. Không cần chạy `scripts/migrate.php` (dump đã đầy đủ và không chứa `CREATE DATABASE`).
+
+### 3. Upload mã nguồn
+
+Nén toàn bộ thư mục dự án (trừ `.git/`) thành `.zip`, hPanel → **Files → File Manager** → `public_html` → Upload → Extract. Kết quả phải là `public_html/index.php`, `public_html/includes/`, `public_html/assets/`… (không nằm trong thư mục con). Cách khác: hPanel → **Git** → Deploy từ repository vào `public_html`.
+
+File `.htaccess` ở gốc và trong `config/`, `sql/`, `scripts/`, `tests/`, `storage/`, `bootstrap/` chặn truy cập trực tiếp qua web; thư mục upload ảnh chặn chạy PHP.
+
+### 4. Tạo `config/local.php` trên hosting
+
+File Manager → `public_html/config/` → copy `local.example.php` thành `local.php` → sửa:
+
+```php
+'app'   => ['debug' => false],
+'db'    => ['host' => 'localhost', 'name' => 'u123456789_winsum', 'user' => 'u123456789_winsum', 'pass' => 'MẬT_KHẨU_DB', 'charset' => 'utf8mb4'],
+'admin' => ['name' => 'Admin', 'phone' => 'SĐT_ADMIN', 'email' => 'EMAIL_ADMIN', 'password' => 'MẬT_KHẨU_MẠNH'],
+'bank'  => ['code' => 'MB', 'account_number' => 'SỐ_TK', 'account_name' => 'TÊN_CHỦ_TK'],
+```
+
+Đổi mật khẩu admin **trước** khi mở web lần đầu: tài khoản admin được tạo ở request đầu tiên từ giá trị này. Muốn gửi email thật, đặt `mail.transport = 'smtp'` và điền SMTP (Hostinger: `smtp.hostinger.com`, port 587 với email theo tên miền).
+
+### 5. Phiên bản PHP và quyền ghi
+
+- hPanel → **Advanced → PHP Configuration** → chọn PHP 8.1 hoặc 8.2, tick `mysqli`, `mbstring`, `fileinfo`; `display_errors` tắt.  
+- File Manager → chmod `755` cho `assets/images/blog-uploads`, `assets/images/return-uploads`, `storage/mail` (Hostinger mặc định đã ghi được).  
+
+### 6. SSL và kiểm tra
+
+- hPanel → **Security → SSL** → cài SSL miễn phí → bật **Force HTTPS**.  
+- Mở `https://<tên-miền>/` → trang chủ; `/index.php?view=catalog`; đăng nhập admin bằng SĐT/email trong `local.php` → **Bảng quản trị** → kiểm tra form **Tài khoản nhận tiền**.  
+- Thử mở `/config/local.php`, `/winsumwebfinal.sql`, `/sql/` → phải bị **403**.  
+- Nếu lỗi DB, trang báo "Hệ thống đang bảo trì"; chi tiết ghi ở hPanel → **Files → Error log** (hoặc đặt tạm `debug => true`).
 
 ---
 
@@ -352,9 +396,11 @@ Script tạo database `winsumwebfinal_test` nếu chưa có, import SQL, chạy 
 
 ## Xử lý lỗi
 
-**Không kết nối DB:** MySQL đã Start; DB tên `winsumwebfinal`; thử `127.0.0.1`; import lại SQL.
+**Không kết nối DB:** trang hiện "Hệ thống đang bảo trì" (HTTP 503), chi tiết ghi vào error log của PHP. Kiểm tra `config/local.php` (host/tên DB/user/pass), MySQL đã chạy, import lại SQL. Đặt `'app' => ['debug' => true]` để xem lỗi ngay trên trang.
 
-**Trang trắng:** Bật `display_errors` trong `php.ini`; kiểm tra PHP ≥ 8.0 + `mysqli`.
+**Trang trắng:** đặt `debug => true` trong `config/local.php`; kiểm tra PHP ≥ 8.0 + `mysqli`, `mbstring`.
+
+**403 khi mở trang:** chỉ các thư mục `config/`, `sql/`, `scripts/`, `tests/`, `storage/`, `bootstrap/` bị chặn; `index.php` ở gốc phải mở được. Nếu hosting không có `mod_rewrite`, các file `.htaccess` trong từng thư mục vẫn chặn.
 
 **Không vào admin:** Dùng SĐT/email admin ở trên, không phải tên hiển thị `admin`.
 
