@@ -1087,6 +1087,11 @@ CREATE TABLE IF NOT EXISTS `schema_migrations` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- File dump này đã chứa đủ schema của mọi migration trong sql/migrations.
+INSERT IGNORE INTO `schema_migrations` (`id`) VALUES
+('001_fix_order_cart_return'),
+('002_shop_payment_account');
+
 CREATE TABLE IF NOT EXISTS `carts` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `customer_id` bigint(20) DEFAULT NULL,
