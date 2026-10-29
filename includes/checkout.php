@@ -118,7 +118,7 @@ $checkoutCanSubmit = !$checkoutBlockedAdmin
                         </div>
                         <div>
                             <dt>Số tài khoản</dt>
-                            <dd><?php echo e($shopBank['account_number'] !== '' ? $shopBank['account_number'] : 'Chưa khai báo trong config/local.php'); ?></dd>
+                            <dd><?php echo e($shopBank['account_number'] !== '' ? $shopBank['account_number'] : 'Chưa khai báo. Quản trị cập nhật tại Tài khoản nhận tiền.'); ?></dd>
                         </div>
                         <div>
                             <dt>Chủ tài khoản</dt>

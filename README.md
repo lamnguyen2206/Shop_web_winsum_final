@@ -194,7 +194,7 @@ Mã đơn: `WS` + `md` + 4 số ngẫu nhiên (ví dụ `WS06161234`).
 | Code | Hiển thị | Hành vi |
 | --- | --- | --- |
 | `cod` | Thanh toán khi nhận hàng | `unpaid` cho đến khi admin đánh dấu `paid` sau khi đã giao |
-| `bank_transfer` | Chuyển khoản | Hiện số tài khoản cửa hàng trong `config/local.php` và mã QR nếu đã khai báo. `unpaid` cho đến khi admin xác nhận đã nhận tiền |
+| `bank_transfer` | Chuyển khoản | Hiện số tài khoản admin đã lưu ở mục **Tài khoản nhận tiền**, kèm mã QR. `unpaid` cho đến khi admin xác nhận đã nhận tiền |
 
 ### Vận chuyển (seed `shipping_methods`)
 

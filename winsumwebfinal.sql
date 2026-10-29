@@ -1120,6 +1120,15 @@ CREATE TABLE IF NOT EXISTS `login_attempts` (
   UNIQUE KEY `uq_login_attempts_identifier` (`identifier`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `shop_payment_accounts` (
+  `id` tinyint(4) NOT NULL,
+  `bank_code` varchar(20) NOT NULL DEFAULT '',
+  `account_number` varchar(30) NOT NULL DEFAULT '',
+  `account_name` varchar(120) NOT NULL DEFAULT '',
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `order_return_items` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `return_request_id` bigint(20) NOT NULL,

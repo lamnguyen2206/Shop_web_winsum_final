@@ -67,6 +67,30 @@ function adminHandlePost(mysqli $conn, string $view): void
     if ($view === 'admin-blog' && csrfValidate()) {
         adminHandleBlogPost($conn);
     }
+
+    if ($view === 'admin-payment-account' && csrfValidate()) {
+        adminHandlePaymentAccountPost($conn);
+    }
+}
+
+function adminHandlePaymentAccountPost(mysqli $conn): void
+{
+    require_once __DIR__ . '/helpers.php';
+
+    if ((string) ($_POST['action'] ?? '') !== 'save_shop_bank') {
+        redirect(app_url('admin-payment-account'));
+    }
+
+    $result = shopBankAccountSave(
+        $conn,
+        (string) ($_POST['bank_code'] ?? ''),
+        (string) ($_POST['account_number'] ?? ''),
+        (string) ($_POST['account_name'] ?? '')
+    );
+    redirect(app_url('admin-payment-account', [
+        'msg' => $result['message'],
+        'msg_ok' => $result['ok'] ? '1' : '0',
+    ]));
 }
 
 function adminHandleReturnsPost(mysqli $conn): void
