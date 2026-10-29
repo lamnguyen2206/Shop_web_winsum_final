@@ -1090,7 +1090,8 @@ CREATE TABLE IF NOT EXISTS `schema_migrations` (
 -- File dump này đã chứa đủ schema của mọi migration trong sql/migrations.
 INSERT IGNORE INTO `schema_migrations` (`id`) VALUES
 ('001_fix_order_cart_return'),
-('002_shop_payment_account');
+('002_shop_payment_account'),
+('003_payment_webhook');
 
 CREATE TABLE IF NOT EXISTS `carts` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
@@ -1132,6 +1133,17 @@ CREATE TABLE IF NOT EXISTS `shop_payment_accounts` (
   `account_name` varchar(120) NOT NULL DEFAULT '',
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `payment_webhook_events` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `provider` varchar(32) NOT NULL,
+  `provider_event_id` varchar(80) NOT NULL,
+  `order_id` int(11) DEFAULT NULL,
+  `status` varchar(24) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_payment_webhook_event` (`provider`,`provider_event_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `order_return_items` (

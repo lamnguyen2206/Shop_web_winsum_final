@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/cart-store.php';
 require_once __DIR__ . '/order-repository.php';
+require_once __DIR__ . '/payment-webhook.php';
 
 $checkoutBlockedAdmin = adminCurrent();
 $orderPlaced = false;
@@ -19,6 +20,24 @@ if (!empty($_SESSION['checkout_result']) && is_array($_SESSION['checkout_result'
     $orderTotal = (int) ($checkoutResult['total'] ?? 0);
     $orderPaymentCode = (string) ($checkoutResult['payment_method_code'] ?? '');
     $orderPaymentName = (string) ($checkoutResult['payment_method_name'] ?? '');
+}
+
+if (!$orderPlaced) {
+    $pendingCode = strtoupper(trim((string) ($_SESSION['last_order_code'] ?? '')));
+    $pendingPhone = (string) ($_SESSION['last_order_phone'] ?? '');
+    if ($pendingCode !== '' && $pendingPhone !== '') {
+        $pendingOrder = orderGetOrderDetailByCodeAndPhone($conn, $pendingCode, $pendingPhone);
+        if ($pendingOrder !== null && paymentWebhookOrderIsWaiting($pendingOrder)) {
+            $orderPlaced = true;
+            $orderCode = (string) $pendingOrder['order_code'];
+            $orderTotal = (int) round((float) ($pendingOrder['grand_total'] ?? 0));
+            $orderPaymentCode = (string) ($pendingOrder['payment']['payment_method_code'] ?? '');
+            $orderPaymentName = (string) ($pendingOrder['payment']['payment_method_name'] ?? '');
+            $orderMessage = 'Đơn ' . $orderCode . ' đang chờ ngân hàng xác nhận thanh toán.';
+        } elseif ($pendingOrder !== null && (string) ($pendingOrder['payment_status'] ?? '') === 'paid') {
+            redirect(app_url('order-paid', ['code' => (string) $pendingOrder['order_code']]));
+        }
+    }
 }
 
 $checkoutProvince = trim((string) ($_POST['customer_province'] ?? ''));
@@ -102,12 +121,12 @@ $checkoutCanSubmit = !$checkoutBlockedAdmin
                 ]);
         }
         ?>
-        <div class="checkout-success-box">
+        <div class="checkout-success-box"<?php echo $showBankTransfer ? ' data-payment-wait data-order-code="' . e($orderCode) . '" data-status-api="api/order-payment-status.php"' : ''; ?>>
             <p>Cảm ơn bạn! Đơn hàng đã được ghi nhận.</p>
             <?php if ($showBankTransfer): ?>
                 <div class="bank-transfer-box">
                     <h2>Thanh toán chuyển khoản</h2>
-                    <p>Chuyển đúng số tiền và nội dung bên dưới. Đơn giữ trạng thái chưa thanh toán cho đến khi quản trị xác nhận đã nhận tiền.</p>
+                    <p>Quét QR hoặc chuyển đúng số tiền và nội dung bên dưới. Khi tiền vào tài khoản, trang sẽ tự chuyển sang đặt hàng thành công.</p>
                     <?php if ($vietQrImageUrl !== ''): ?>
                         <img src="<?php echo e($vietQrImageUrl); ?>" alt="Mã QR chuyển khoản cho đơn <?php echo e($orderCode); ?>">
                     <?php endif; ?>
@@ -133,7 +152,8 @@ $checkoutCanSubmit = !$checkoutBlockedAdmin
                             <dd><?php echo e($vietQrTransferContent); ?></dd>
                         </div>
                     </dl>
-                    <small>Hệ thống không tự đánh dấu đã thanh toán. Quản trị xác nhận sau khi tiền vào tài khoản cửa hàng.</small>
+                    <p class="checkout-payment-wait" data-payment-wait-status>Đang chờ ngân hàng báo đã nhận tiền… Không đóng trang này.</p>
+                    <small>Nội dung chuyển khoản phải chứa mã đơn. Nếu webhook ngân hàng chưa bật, quản trị vẫn xác nhận tay trên web.</small>
                 </div>
             <?php elseif ($orderPaymentName !== ''): ?>
                 <p>Phương thức thanh toán: <?php echo e($orderPaymentName); ?></p>

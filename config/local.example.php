@@ -44,4 +44,9 @@ return [
         'account_number' => '',
         'account_name' => 'WINSUM HOME',
     ],
+    'payment_webhook' => [
+        // Token API Key trên SePay (Webhooks). Để trống = tắt webhook.
+        'provider' => 'sepay',
+        'token' => '',
+    ],
 ];

@@ -101,6 +101,20 @@ File Manager → `public_html/config/` → copy `local.example.php` thành `loca
 
 Đổi mật khẩu admin **trước** khi mở web lần đầu: tài khoản admin được tạo ở request đầu tiên từ giá trị này. Muốn gửi email thật, đặt `mail.transport = 'smtp'` và điền SMTP (Hostinger: `smtp.hostinger.com`, port 587 với email theo tên miền).
 
+### 7. Webhook chuyển khoản (SePay) — trang tự nhảy khi tiền vào
+
+1. Đăng ký [SePay](https://my.sepay.vn) → kết nối đúng số tài khoản đã khai trên **Tài khoản nhận tiền**.  
+2. SePay → **Webhooks** → URL `https://<tên-miền>/api/sepay-webhook.php`, phương thức POST.  
+3. Tạo API Key, dán vào `config/local.php`:
+
+```php
+'payment_webhook' => ['provider' => 'sepay', 'token' => 'API_KEY_SEPAY'],
+```
+
+SePay gửi header `Authorization: Apikey ...`. Nếu hosting không chuyển header này, thêm `?token=API_KEY_SEPAY` vào URL webhook.  
+4. Khách đặt hàng (VietQR) **giữ trang thanh toán**; khi tiền vào, webhook đánh đơn `paid` và JS chuyển sang `view=order-paid`. Nội dung CK phải chứa mã đơn (`WS` + 8 số, đã in trên QR).  
+5. phpMyAdmin chạy `sql/migrations/003_payment_webhook.sql` nếu DB được import trước khi có file này.
+
 ### 5. Phiên bản PHP và quyền ghi
 
 - hPanel → **Advanced → PHP Configuration** → chọn PHP 8.1 hoặc 8.2, tick `mysqli`, `mbstring`, `fileinfo`; `display_errors` tắt.  
@@ -209,6 +223,8 @@ Pattern **PRG** (Post-Redirect-Get): xử lý POST → `redirect()` → render G
 | `api/product-search.php` | Tìm kiếm SP (header `site-search.js`) |
 | `api/checkout-totals.php` | Tính lại tổng checkout |
 | `api/admin-tasks.php` | Banner nhắc việc admin (`admin-tasks.js`) |
+| `api/sepay-webhook.php` | Ngân hàng (SePay) báo tiền vào → đánh đơn `paid` |
+| `api/order-payment-status.php` | Trang checkout hỏi đã nhận tiền chưa |
 
 ### Layout & assets
 
@@ -238,7 +254,7 @@ Mã đơn: `WS` + `md` + 4 số ngẫu nhiên (ví dụ `WS06161234`).
 | Code | Hiển thị | Hành vi |
 | --- | --- | --- |
 | `cod` | Thanh toán khi nhận hàng | `unpaid` cho đến khi admin đánh dấu `paid` sau khi đã giao |
-| `bank_transfer` | Chuyển khoản | Hiện số tài khoản admin đã lưu ở mục **Tài khoản nhận tiền**, kèm mã QR. `unpaid` cho đến khi admin xác nhận đã nhận tiền |
+| `bank_transfer` | Chuyển khoản VietQR | Hiện QR theo tài khoản admin đã lưu. `unpaid` cho đến khi SePay webhook báo tiền vào (hoặc admin xác nhận tay) |
 
 ### Vận chuyển (seed `shipping_methods`)
 
@@ -355,7 +371,9 @@ webwinsum/
 ├── api/
 │   ├── checkout-totals.php
 │   ├── product-search.php
-│   └── admin-tasks.php
+│   ├── admin-tasks.php
+│   ├── sepay-webhook.php
+│   └── order-payment-status.php
 │
 └── docs/
     └── winsum-er-diagram.erdplus
@@ -380,7 +398,7 @@ Tài khoản quản trị và số tài khoản nhận tiền nằm ở `config/
 
 ## Hạn chế
 
-- Chuyển khoản hiện tài khoản cửa hàng và mã QR. Admin xác nhận đã nhận tiền trên web, không có webhook ngân hàng  
+- Chuyển khoản hiện QR VietQR. Khi cấu hình SePay webhook, đơn tự `paid` và trang checkout chuyển sang đặt hàng thành công; chưa cấu hình thì admin xác nhận tay  
 - Chưa email SMTP mặc định; thư xác nhận đơn ghi ở `storage/mail/`  
 - Hoàn hàng theo dòng đã chọn, không tự hoàn một phần tiền trên cổng thanh toán  
 
@@ -390,7 +408,7 @@ Tài khoản quản trị và số tài khoản nhận tiền nằm ở `config/
 php tests/run.php
 ```
 
-Script tạo database `winsumwebfinal_test` nếu chưa có, import SQL, chạy migrate, rồi kiểm tra: đơn mới là `pending` và chỉ trừ kho khi `shipped`, mã giảm giá hết lượt bị từ chối, khách không xem đơn của người khác, admin không thêm được vào giỏ.  
+Script tạo database `winsumwebfinal_test` nếu chưa có, import SQL, chạy migrate, rồi kiểm tra: đơn mới là `pending` và chỉ trừ kho khi `shipped`, mã giảm giá hết lượt bị từ chối, khách không xem đơn của người khác, admin không thêm được vào giỏ, webhook chuyển khoản khớp mã đơn + số tiền thì đánh `paid`.  
 
 ---
 
