@@ -1,0 +1,10 @@
+# Chỉ phục vụ ảnh đã upload, không chạy script.
+<FilesMatch "(?i)\.(php|phtml|phar|php[0-9]|cgi|pl|py|sh)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
