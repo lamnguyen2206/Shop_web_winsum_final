@@ -158,7 +158,7 @@ function adminHandleOrdersPost(mysqli $conn, string $view): void
         }
         redirect(app_url('admin-order-detail', [
             'code' => $code,
-            'msg' => $ok ? 'Đã cập nhật trạng thái thanh toán.' : 'Không thể cập nhật thanh toán. Chỉ đơn COD đã giao mới được chỉnh thủ công.',
+            'msg' => $ok ? 'Đã cập nhật trạng thái thanh toán.' : 'Không thể cập nhật thanh toán.',
             'msg_ok' => $ok ? '1' : '0',
         ]));
     }

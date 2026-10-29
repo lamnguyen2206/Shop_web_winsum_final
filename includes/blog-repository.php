@@ -41,6 +41,20 @@ function blogMapPostRow(array $row): array
     ];
 }
 
+function blogUrlIsAllowed(string $url): bool
+{
+    $url = trim($url);
+    if ($url === '') {
+        return false;
+    }
+    if (str_starts_with($url, '/') || str_starts_with($url, 'assets/')) {
+        return !str_contains($url, 'javascript:') && !str_contains($url, 'data:');
+    }
+    $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+
+    return in_array($scheme, ['http', 'https'], true);
+}
+
 function blogSanitizeHtml(string $html): string
 {
     $allowed = '<p><br><strong><em><u><h2><h3><h4><ul><ol><li><blockquote><img><a>';
@@ -53,6 +67,9 @@ function blogSanitizeHtml(string $html): string
             $href = $hrefMatch[1];
         } elseif (preg_match("/href\s*=\s*'([^']*)'/i", $attrs, $hrefMatch)) {
             $href = $hrefMatch[1];
+        }
+        if (!blogUrlIsAllowed($href)) {
+            return '<a>';
         }
         $href = htmlspecialchars($href, ENT_QUOTES, 'UTF-8');
         return '<a href="' . $href . '" target="_blank" rel="noopener noreferrer">';
@@ -72,7 +89,7 @@ function blogSanitizeHtml(string $html): string
         } elseif (preg_match("/alt\s*=\s*'([^']*)'/i", $attrs, $altMatch)) {
             $alt = $altMatch[1];
         }
-        if ($src === '') {
+        if ($src === '' || !blogUrlIsAllowed($src)) {
             return '';
         }
         return '<img src="' . htmlspecialchars($src, ENT_QUOTES, 'UTF-8') . '" alt="' . htmlspecialchars($alt, ENT_QUOTES, 'UTF-8') . '">';

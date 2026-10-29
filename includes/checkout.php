@@ -105,8 +105,8 @@ $checkoutCanSubmit = !$checkoutBlockedAdmin
             <p>Cảm ơn bạn! Đơn hàng đã được ghi nhận.</p>
             <?php if ($showVietQrDemo): ?>
                 <div class="vietqr-demo-box">
-                    <h2>Thanh toán VietQR</h2>
-                    <p>Quét mã QR để chuyển khoản, sau đó bấm “Tôi đã thanh toán” để hoàn tất demo.</p>
+                    <h2>Thanh toán chuyển khoản</h2>
+                    <p>Quét mã QR để chuyển khoản. Đơn ở trạng thái chờ xác nhận cho đến khi quản trị xác nhận đã nhận tiền.</p>
                     <img src="<?php echo e($vietQrImageUrl); ?>" alt="Mã QR thanh toán VietQR cho đơn <?php echo e($orderCode); ?>">
                     <dl>
                         <div>
@@ -130,13 +130,7 @@ $checkoutCanSubmit = !$checkoutBlockedAdmin
                             <dd><?php echo e($vietQrTransferContent); ?></dd>
                         </div>
                     </dl>
-                    <form method="post" action="<?php echo e(app_url('checkout')); ?>" class="vietqr-demo-form">
-                        <?php echo csrfField(); ?>
-                        <input type="hidden" name="action" value="confirm_vietqr_demo">
-                        <input type="hidden" name="order_code" value="<?php echo e($orderCode); ?>">
-                        <button type="submit">Tôi đã thanh toán</button>
-                    </form>
-                    <small>Chức năng này dùng cho demo đồ án. Bản thực tế cần webhook ngân hàng để xác nhận tự động.</small>
+                    <small>Mã QR chỉ để chuyển khoản. Hệ thống không tự đánh dấu đã thanh toán.</small>
                 </div>
             <?php elseif ($orderPaymentName !== ''): ?>
                 <p>Phương thức thanh toán: <?php echo e($orderPaymentName); ?></p>

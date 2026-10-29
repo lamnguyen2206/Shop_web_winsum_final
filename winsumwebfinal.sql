@@ -1080,6 +1080,57 @@ ALTER TABLE `product_images`
 ALTER TABLE `product_reviews`
   ADD CONSTRAINT `fk_product_reviews_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_product_reviews_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
+
+CREATE TABLE IF NOT EXISTS `schema_migrations` (
+  `id` varchar(64) NOT NULL,
+  `applied_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `carts` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `customer_id` bigint(20) DEFAULT NULL,
+  `session_key` varchar(64) DEFAULT NULL,
+  `coupon_code` varchar(50) NOT NULL DEFAULT '',
+  `coupon_id` bigint(20) DEFAULT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_carts_customer` (`customer_id`),
+  UNIQUE KEY `uq_carts_session` (`session_key`),
+  CONSTRAINT `fk_carts_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `cart_items` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `cart_id` bigint(20) NOT NULL,
+  `product_id` bigint(20) NOT NULL,
+  `qty` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_cart_product` (`cart_id`,`product_id`),
+  CONSTRAINT `fk_cart_items_cart` FOREIGN KEY (`cart_id`) REFERENCES `carts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_cart_items_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `login_attempts` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `identifier` varchar(190) NOT NULL,
+  `attempts` int(11) NOT NULL DEFAULT 0,
+  `window_start` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_login_attempts_identifier` (`identifier`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `order_return_items` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `return_request_id` bigint(20) NOT NULL,
+  `order_item_id` bigint(20) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_return_line` (`return_request_id`,`order_item_id`),
+  CONSTRAINT `fk_return_items_request` FOREIGN KEY (`return_request_id`) REFERENCES `order_return_requests` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_return_items_order_item` FOREIGN KEY (`order_item_id`) REFERENCES `order_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

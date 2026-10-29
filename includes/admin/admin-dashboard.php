@@ -34,7 +34,7 @@ $customerOrders = $customerOrderSearch !== ''
         <article class="admin-stat-card">
             <span class="admin-stat-label">Tổng đơn hàng</span>
             <strong class="admin-stat-value"><?php echo (int) $stats['orders_total']; ?></strong>
-            <small><?php echo (int) $stats['orders_pending']; ?> đơn đang giao</small>
+            <small><?php echo (int) $stats['orders_pending']; ?> đơn chờ xử lý</small>
         </article>
         <article class="admin-stat-card">
             <span class="admin-stat-label">Doanh thu thuần</span>

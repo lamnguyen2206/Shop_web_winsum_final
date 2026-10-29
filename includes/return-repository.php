@@ -5,111 +5,8 @@ require_once __DIR__ . '/../config/database.php';
 
 
 function returnEnsureSchema(mysqli $conn): void
-
 {
-
-    static $done = false;
-
-    if ($done) {
-
-        return;
-
-    }
-
-    $done = true;
-
-
-
-    $conn->query(
-
-        'CREATE TABLE IF NOT EXISTS order_return_requests (
-
-            id BIGINT AUTO_INCREMENT PRIMARY KEY,
-
-            order_id BIGINT NOT NULL,
-
-            customer_id BIGINT NOT NULL,
-
-            reason VARCHAR(80) NOT NULL,
-
-            description TEXT NOT NULL,
-
-            evidence_url VARCHAR(500) DEFAULT NULL,
-
-            bank_account_number VARCHAR(40) DEFAULT NULL,
-
-            bank_account_name VARCHAR(120) DEFAULT NULL,
-
-            bank_name VARCHAR(120) DEFAULT NULL,
-
-            return_shipping_cost DECIMAL(12,2) DEFAULT NULL,
-
-            status ENUM(\'pending\',\'accepted\',\'goods_received\',\'completed\',\'rejected\') NOT NULL DEFAULT \'pending\',
-
-            admin_note TEXT DEFAULT NULL,
-
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-            reviewed_at TIMESTAMP NULL DEFAULT NULL,
-
-            reviewed_by VARCHAR(50) DEFAULT NULL,
-
-            goods_received_at TIMESTAMP NULL DEFAULT NULL,
-
-            refunded_at TIMESTAMP NULL DEFAULT NULL,
-
-            INDEX idx_return_order (order_id),
-
-            INDEX idx_return_status (status, created_at),
-
-            CONSTRAINT fk_return_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
-
-        )'
-
-    );
-
-
-
-    $columns = [
-
-        'bank_account_number' => 'VARCHAR(40) DEFAULT NULL',
-
-        'bank_account_name' => 'VARCHAR(120) DEFAULT NULL',
-
-        'bank_name' => 'VARCHAR(120) DEFAULT NULL',
-
-        'return_shipping_cost' => 'DECIMAL(12,2) DEFAULT NULL',
-
-        'goods_received_at' => 'TIMESTAMP NULL DEFAULT NULL',
-
-        'refunded_at' => 'TIMESTAMP NULL DEFAULT NULL',
-
-        'customer_refund_confirmed_at' => 'TIMESTAMP NULL DEFAULT NULL',
-
-    ];
-
-    foreach ($columns as $col => $def) {
-
-        $check = $conn->query("SHOW COLUMNS FROM order_return_requests LIKE '" . $conn->real_escape_string($col) . "'");
-
-        if ($check && $check->num_rows === 0) {
-
-            $conn->query("ALTER TABLE order_return_requests ADD COLUMN {$col} {$def}");
-
-        }
-
-    }
-
-
-
-    $conn->query("ALTER TABLE order_return_requests
-
-                  MODIFY status ENUM('pending','accepted','goods_received','completed','rejected') NOT NULL DEFAULT 'pending'");
-
-    $conn->query("UPDATE order_return_requests SET status = 'completed' WHERE status = 'approved'");
-
 }
-
 
 
 function returnGetWindowDays(): int
@@ -362,7 +259,7 @@ function returnOrderIsDelivered(array $order): bool
 
 
 
-    return $status === 'delivered' || $fulfillment === 'delivered';
+    return in_array($status, ['delivered', 'partially_returned'], true) || $fulfillment === 'delivered';
 
 }
 
@@ -430,17 +327,17 @@ function returnCanCustomerRequest(mysqli $conn, array $order, int $customerId): 
 
 
 
-    $existing = returnGetByOrderId($conn, (int) $order['id']);
+    require_once __DIR__ . '/return-lines.php';
 
-    if ($existing) {
+    if (returnOrderHasOpenRequest($conn, (int) $order['id'])) {
 
-        $existingStatus = returnNormalizeStatus((string) $existing['status']);
+        return ['ok' => false, 'message' => 'Đơn hàng đang có yêu cầu hoàn chưa xử lý xong.'];
 
-        if (in_array($existingStatus, ['pending', 'accepted', 'goods_received', 'completed'], true)) {
+    }
 
-            return ['ok' => false, 'message' => 'Đơn hàng đã có yêu cầu hoàn hàng.'];
+    if (!returnOrderHasReturnableQuantity($conn, (int) $order['id'])) {
 
-        }
+        return ['ok' => false, 'message' => 'Đơn hàng không còn sản phẩm để hoàn.'];
 
     }
 
@@ -572,13 +469,17 @@ function returnCreateRequest(
 
     string $description,
 
-    array $bankInfo = []
+    array $bankInfo = [],
+
+    array $lines = []
 
 ): array {
 
     returnEnsureSchema($conn);
 
     require_once __DIR__ . '/order-repository.php';
+
+    require_once __DIR__ . '/return-lines.php';
 
 
 
@@ -650,6 +551,16 @@ function returnCreateRequest(
 
 
 
+    $normalizedLines = returnNormalizeRequestedLines($conn, $orderId, $lines['qty'] ?? [], $lines['ids'] ?? []);
+
+    if (!$normalizedLines['ok']) {
+
+        return ['ok' => false, 'message' => $normalizedLines['message']];
+
+    }
+
+
+
     $evidenceUrl = returnSaveEvidenceUpload();
 
     if ($evidenceUrl === null) {
@@ -708,7 +619,11 @@ function returnCreateRequest(
 
         }
 
+        $requestId = (int) $stmt->insert_id;
+
         $stmt->close();
+
+        returnInsertLines($conn, $requestId, $normalizedLines['lines']);
 
 
 
@@ -1328,25 +1243,89 @@ function returnAdminCompleteRefund(mysqli $conn, int $requestId, string $adminNo
 
 
 
-        if (!orderApplyStatusUpdate($conn, $orderId, 'returned', 'return_complete', $orderRow)) {
+        require_once __DIR__ . '/return-lines.php';
+
+        $returnLines = returnLinesForRequest($conn, $requestId);
+
+        if ($returnLines === []) {
+
+            $items = returnListReturnableLines($conn, $orderId);
+
+            $returnLines = [];
+
+            foreach ($items as $item) {
+
+                if ($item['remaining'] < 1) {
+
+                    continue;
+
+                }
+
+                $returnLines[] = [
+
+                    'order_item_id' => $item['id'],
+
+                    'product_id' => $item['product_id'],
+
+                    'quantity' => $item['remaining'],
+
+                    'unit_price' => $item['unit_price'],
+
+                ];
+
+            }
+
+        }
+
+        returnRestockLines($conn, $orderId, $returnLines);
+
+        $fullOrder = returnOrderIsFullyReturned($conn, $orderId);
+
+        $refundAmount = returnRefundAmount($conn, $orderId, $returnLines, $fullOrder);
+
+        $nextStatus = $fullOrder ? 'returned' : 'partially_returned';
+
+        if ($fullOrder) {
+
+            $stmtFlag = $conn->prepare('UPDATE orders SET inventory_restocked = 1 WHERE id = ?');
+
+            if ($stmtFlag) {
+
+                $stmtFlag->bind_param('i', $orderId);
+
+                $stmtFlag->execute();
+
+                $stmtFlag->close();
+
+            }
+
+        }
+
+        if (!orderApplyStatusUpdate($conn, $orderId, $nextStatus, 'return_complete', $orderRow)) {
 
             throw new RuntimeException('Không cập nhật được trạng thái đơn.');
 
         }
 
-
-
-        if (($orderRow['payment_status'] ?? '') !== 'refunded') {
+        if ($fullOrder && ($orderRow['payment_status'] ?? '') !== 'refunded') {
 
             orderSetPaymentStatusInTransaction($conn, $orderId, 'refunded', 'return_complete');
 
         }
 
+        $amountLabel = number_format($refundAmount, 0, ',', '.') . 'đ';
 
+        $stmtNote = $conn->prepare("UPDATE order_return_requests SET admin_note = CONCAT(COALESCE(admin_note, ''), '\nSố tiền hoàn: ', ?) WHERE id = ?");
 
-        require_once __DIR__ . '/coupon-repository.php';
+        if ($stmtNote) {
 
-        couponReleaseRedemption($conn, $orderId);
+            $stmtNote->bind_param('si', $amountLabel, $requestId);
+
+            $stmtNote->execute();
+
+            $stmtNote->close();
+
+        }
 
 
 
@@ -1362,7 +1341,11 @@ function returnAdminCompleteRefund(mysqli $conn, int $requestId, string $adminNo
 
 
 
-    return ['ok' => true, 'message' => 'Đã ghi nhận hoàn tiền. Chờ khách xác nhận đã nhận tiền.'];
+    $doneMessage = $fullOrder
+        ? 'Đã hoàn tất hoàn cả đơn. Số tiền hoàn ' . $amountLabel . '.'
+        : 'Đã hoàn một phần đơn. Số tiền hoàn ' . $amountLabel . '. Phí ship chỉ hoàn khi trả hết sản phẩm.';
+
+    return ['ok' => true, 'message' => $doneMessage];
 
 }
 

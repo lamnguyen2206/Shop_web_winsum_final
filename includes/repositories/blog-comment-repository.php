@@ -4,46 +4,6 @@ declare(strict_types=1);
 
 function blogCommentEnsureTable(mysqli $conn): void
 {
-    $conn->query("CREATE TABLE IF NOT EXISTS blog_comments (
-        id BIGINT AUTO_INCREMENT PRIMARY KEY,
-        post_id BIGINT NOT NULL,
-        customer_id BIGINT DEFAULT NULL,
-        parent_id BIGINT DEFAULT NULL,
-        is_admin_reply TINYINT(1) NOT NULL DEFAULT 0,
-        author_name VARCHAR(120) NOT NULL,
-        author_email VARCHAR(120) DEFAULT NULL,
-        content TEXT NOT NULL,
-        status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_blog_comments_post (post_id),
-        INDEX idx_blog_comments_status (status),
-        INDEX idx_blog_comments_parent (parent_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-    $extraCols = [
-        'parent_id' => 'BIGINT DEFAULT NULL',
-        'is_admin_reply' => 'TINYINT(1) NOT NULL DEFAULT 0',
-    ];
-    foreach ($extraCols as $col => $def) {
-        $check = $conn->query("SHOW COLUMNS FROM blog_comments LIKE '" . $conn->real_escape_string($col) . "'");
-        if ($check && $check->num_rows === 0) {
-            $conn->query("ALTER TABLE blog_comments ADD COLUMN {$col} {$def}");
-        }
-        if ($check) {
-            $check->free();
-        }
-    }
-
-    $indexCheck = $conn->query("SHOW INDEX FROM blog_comments WHERE Key_name = 'idx_blog_comments_parent'");
-    if ($indexCheck && $indexCheck->num_rows === 0) {
-        $conn->query('ALTER TABLE blog_comments ADD INDEX idx_blog_comments_parent (parent_id)');
-    }
-    if ($indexCheck) {
-        $indexCheck->free();
-    }
-
-    $conn->query("UPDATE blog_comments SET status = 'approved' WHERE status = 'pending'");
 }
 
 function blogCommentMapRow(array $row): array
