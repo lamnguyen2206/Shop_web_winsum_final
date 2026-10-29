@@ -51,6 +51,15 @@
     color: #fff;
 }
 
+.admin-payment-account-form {
+    max-width: 560px;
+    margin-bottom: 24px;
+}
+
+.admin-payment-account-form h2 {
+    margin-top: 0;
+}
+
 .admin-notice {
     margin-bottom: 16px;
     padding: 10px 14px;

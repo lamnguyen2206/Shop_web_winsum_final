@@ -83,43 +83,46 @@ $checkoutCanSubmit = !$checkoutBlockedAdmin
         <?php
         $registerPhone = trim((string) ($_SESSION['last_order_phone'] ?? ''));
         $registerParams = $registerPhone !== '' ? ['phone' => $registerPhone] : [];
-        $showVietQrDemo = $orderCode !== ''
+        $showBankTransfer = $orderCode !== ''
             && $orderTotal > 0
             && in_array($orderPaymentCode, ['bank_transfer', 'vietqr'], true);
-        $vietQrBankCode = 'MB';
-        $vietQrAccountNumber = '0123456789';
-        $vietQrAccountName = 'WINSUM HOME';
+        $shopBank = shopBankAccount();
         $vietQrTransferContent = $orderCode;
-        $vietQrImageUrl = 'https://img.vietqr.io/image/'
-            . rawurlencode($vietQrBankCode)
-            . '-'
-            . rawurlencode($vietQrAccountNumber)
-            . '-compact2.png?'
-            . http_build_query([
-                'amount' => $orderTotal,
-                'addInfo' => $vietQrTransferContent,
-                'accountName' => $vietQrAccountName,
-            ]);
+        $vietQrImageUrl = '';
+        if ($shopBank['code'] !== '' && $shopBank['account_number'] !== '') {
+            $vietQrImageUrl = 'https://img.vietqr.io/image/'
+                . rawurlencode($shopBank['code'])
+                . '-'
+                . rawurlencode($shopBank['account_number'])
+                . '-compact2.png?'
+                . http_build_query([
+                    'amount' => $orderTotal,
+                    'addInfo' => $vietQrTransferContent,
+                    'accountName' => $shopBank['account_name'],
+                ]);
+        }
         ?>
         <div class="checkout-success-box">
             <p>Cảm ơn bạn! Đơn hàng đã được ghi nhận.</p>
-            <?php if ($showVietQrDemo): ?>
-                <div class="vietqr-demo-box">
-                    <h2>Thanh toán VietQR</h2>
-                    <p>Quét mã QR để chuyển khoản, sau đó bấm “Tôi đã thanh toán” để hoàn tất demo.</p>
-                    <img src="<?php echo e($vietQrImageUrl); ?>" alt="Mã QR thanh toán VietQR cho đơn <?php echo e($orderCode); ?>">
+            <?php if ($showBankTransfer): ?>
+                <div class="bank-transfer-box">
+                    <h2>Thanh toán chuyển khoản</h2>
+                    <p>Chuyển đúng số tiền và nội dung bên dưới. Đơn giữ trạng thái chưa thanh toán cho đến khi quản trị xác nhận đã nhận tiền.</p>
+                    <?php if ($vietQrImageUrl !== ''): ?>
+                        <img src="<?php echo e($vietQrImageUrl); ?>" alt="Mã QR chuyển khoản cho đơn <?php echo e($orderCode); ?>">
+                    <?php endif; ?>
                     <dl>
                         <div>
                             <dt>Ngân hàng</dt>
-                            <dd><?php echo e($vietQrBankCode); ?></dd>
+                            <dd><?php echo e($shopBank['code'] !== '' ? $shopBank['code'] : 'Chưa khai báo'); ?></dd>
                         </div>
                         <div>
                             <dt>Số tài khoản</dt>
-                            <dd><?php echo e($vietQrAccountNumber); ?></dd>
+                            <dd><?php echo e($shopBank['account_number'] !== '' ? $shopBank['account_number'] : 'Chưa khai báo. Quản trị cập nhật tại Tài khoản nhận tiền.'); ?></dd>
                         </div>
                         <div>
                             <dt>Chủ tài khoản</dt>
-                            <dd><?php echo e($vietQrAccountName); ?></dd>
+                            <dd><?php echo e($shopBank['account_name'] !== '' ? $shopBank['account_name'] : 'Chưa khai báo'); ?></dd>
                         </div>
                         <div>
                             <dt>Số tiền</dt>
@@ -130,13 +133,7 @@ $checkoutCanSubmit = !$checkoutBlockedAdmin
                             <dd><?php echo e($vietQrTransferContent); ?></dd>
                         </div>
                     </dl>
-                    <form method="post" action="<?php echo e(app_url('checkout')); ?>" class="vietqr-demo-form">
-                        <?php echo csrfField(); ?>
-                        <input type="hidden" name="action" value="confirm_vietqr_demo">
-                        <input type="hidden" name="order_code" value="<?php echo e($orderCode); ?>">
-                        <button type="submit">Tôi đã thanh toán</button>
-                    </form>
-                    <small>Chức năng này dùng cho demo đồ án. Bản thực tế cần webhook ngân hàng để xác nhận tự động.</small>
+                    <small>Hệ thống không tự đánh dấu đã thanh toán. Quản trị xác nhận sau khi tiền vào tài khoản cửa hàng.</small>
                 </div>
             <?php elseif ($orderPaymentName !== ''): ?>
                 <p>Phương thức thanh toán: <?php echo e($orderPaymentName); ?></p>

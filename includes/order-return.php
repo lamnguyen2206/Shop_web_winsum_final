@@ -17,6 +17,8 @@ if ($currentCustomer && $orderCode !== '') {
     if ($order) {
         $returnCheck = returnCanCustomerRequest($conn, $order, (int) $currentCustomer['id']);
         $returnDeadline = $returnCheck['deadline'] ?? returnGetDeadlineForOrder($conn, (int) $order['id']);
+        require_once __DIR__ . '/return-lines.php';
+        $returnLines = returnListReturnableLines($conn, (int) $order['id']);
     }
 }
 ?>
@@ -71,6 +73,19 @@ if ($currentCustomer && $orderCode !== '') {
                 <?php echo csrfField(); ?>
                 <input type="hidden" name="action" value="submit_return_request">
                 <input type="hidden" name="order_code" value="<?php echo htmlspecialchars($order['order_code']); ?>">
+
+                <fieldset class="checkout-address-fields">
+                    <legend>Sản phẩm hoàn</legend>
+                    <?php foreach ($returnLines as $line): ?>
+                        <?php if ($line['remaining'] < 1) { continue; } ?>
+                        <label>
+                            <input type="checkbox" name="return_item[]" value="<?php echo (int) $line['id']; ?>">
+                            <?php echo htmlspecialchars($line['product_name']); ?>
+                            (còn hoàn <?php echo (int) $line['remaining']; ?>/<?php echo (int) $line['quantity']; ?>)
+                        </label>
+                        <input type="number" name="return_qty[<?php echo (int) $line['id']; ?>]" min="1" max="<?php echo (int) $line['remaining']; ?>" value="<?php echo (int) $line['remaining']; ?>">
+                    <?php endforeach; ?>
+                </fieldset>
 
                 <label for="return_reason">Lý do hoàn hàng</label>
                 <select name="return_reason" id="return_reason" required>

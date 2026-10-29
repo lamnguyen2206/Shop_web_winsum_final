@@ -23,6 +23,7 @@ function adminTasksFetchCounts(mysqli $conn): array
         'returns_pending' => 0,
         'returns_accepted' => 0,
         'returns_goods_received' => 0,
+        'orders_queue' => 0,
         'orders_shipped' => 0,
         'orders_cod_unpaid' => 0,
         'inventory_low' => 0,
@@ -32,6 +33,7 @@ function adminTasksFetchCounts(mysqli $conn): array
         'returns_pending' => "SELECT COUNT(*) AS c FROM order_return_requests WHERE status = 'pending'",
         'returns_accepted' => "SELECT COUNT(*) AS c FROM order_return_requests WHERE status = 'accepted'",
         'returns_goods_received' => "SELECT COUNT(*) AS c FROM order_return_requests WHERE status = 'goods_received'",
+        'orders_queue' => "SELECT COUNT(*) AS c FROM orders WHERE status IN ('pending', 'processing')",
         'orders_shipped' => "SELECT COUNT(*) AS c FROM orders WHERE status = 'shipped'",
         'orders_cod_unpaid' => "SELECT COUNT(*) AS c FROM orders WHERE status = 'delivered' AND payment_status = 'unpaid'",
     ];
@@ -65,6 +67,12 @@ function adminTasksFetchCounts(mysqli $conn): array
             'label' => 'hoàn hàng chờ chuyển khoản',
             'url' => app_url('admin-returns', ['status' => 'goods_received']),
             'nav' => 'admin-returns',
+            'priority' => 'high',
+        ],
+        'orders_queue' => [
+            'label' => 'đơn chờ xác nhận hoặc đang xử lý',
+            'url' => app_url('admin-orders'),
+            'nav' => 'admin-orders',
             'priority' => 'high',
         ],
         'orders_shipped' => [
@@ -221,8 +229,8 @@ function adminTasksAutoMarkForView(string $view, mysqli $conn): void
 {
     $map = [
         'admin-returns' => ['returns_pending', 'returns_accepted', 'returns_goods_received'],
-        'admin-orders' => ['orders_shipped', 'orders_cod_unpaid'],
-        'admin-order-detail' => ['orders_shipped', 'orders_cod_unpaid'],
+        'admin-orders' => ['orders_queue', 'orders_shipped', 'orders_cod_unpaid'],
+        'admin-order-detail' => ['orders_queue', 'orders_shipped', 'orders_cod_unpaid'],
         'admin-products' => ['inventory_low'],
         'admin-product-create' => ['inventory_low'],
         'admin-product-edit' => ['inventory_low'],

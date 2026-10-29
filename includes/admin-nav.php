@@ -34,6 +34,7 @@ if (adminCurrent() && isset($conn) && $conn instanceof mysqli) {
     <a class="<?php echo $adminView === 'admin-reviews' ? 'active' : ''; ?>" href="<?php echo e(app_url('admin-reviews')); ?>">Đánh giá</a>
     <a class="<?php echo $adminView === 'admin-blog' || $adminView === 'blog-editor' ? 'active' : ''; ?>" href="<?php echo e(app_url('admin-blog')); ?>">Quản lý blog</a>
     <a class="<?php echo $adminView === 'admin-blog-comments' ? 'active' : ''; ?>" href="<?php echo e(app_url('admin-blog-comments')); ?>">Bình luận blog</a>
+    <a class="<?php echo $adminView === 'admin-payment-account' ? 'active' : ''; ?>" href="<?php echo e(app_url('admin-payment-account')); ?>">Tài khoản nhận tiền</a>
 </nav>
 <?php if ($adminTasksPayload !== null): ?>
     <?php include __DIR__ . '/admin/partials/task-banner.php'; ?>

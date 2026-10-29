@@ -20,21 +20,20 @@ require_once __DIR__ . '/../includes/handlers/storefront-post.php';
 require_once __DIR__ . '/../includes/blog-editor-handler.php';
 
 customerBootstrapAdminAccount($conn);
-inventoryEnsureAlertsTable($conn);
 require_once __DIR__ . '/../includes/order-repository.php';
-orderEnsureSchema($conn);
 require_once __DIR__ . '/../includes/review-repository.php';
-reviewEnsureSchema($conn);
 require_once __DIR__ . '/../includes/return-repository.php';
-returnEnsureSchema($conn);
 require_once __DIR__ . '/../includes/blog-comment-repository.php';
 require_once __DIR__ . '/../includes/blog-repository.php';
-blogCommentEnsureTable($conn);
 blogEnsureDefaults($conn);
 
 $requestedView = isset($_GET['view'])
     ? (string) $_GET['view']
     : (isset($_POST['view']) ? (string) $_POST['view'] : 'home');
+$requestedView = rtrim(trim($requestedView), '.');
+if ($requestedView === '') {
+    $requestedView = 'home';
+}
 $resolved = appResolveView($requestedView);
 $view = $resolved['view'];
 

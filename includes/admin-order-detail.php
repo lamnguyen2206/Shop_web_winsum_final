@@ -99,38 +99,43 @@ $paymentMethodCode = $order ? (string) ($order['payment']['payment_method_code']
                         </select>
                         <button type="submit" class="admin-btn-save">Lưu thanh toán</button>
                     </form>
-                    <p class="admin-muted">Đơn COD: cập nhật «Đã thanh toán» sau khi xác nhận đã giao hàng và thu tiền mặt.</p>
+                    <?php if (orderIsCodPaymentMethod($paymentMethodCode)): ?>
+                        <p class="admin-muted">Đơn COD: cập nhật «Đã thanh toán» sau khi xác nhận đã giao hàng và thu tiền mặt.</p>
+                    <?php else: ?>
+                        <p class="admin-muted">Đơn chuyển khoản: đánh dấu «Đã thanh toán» khi đã nhận được tiền. Khách không tự xác nhận được.</p>
+                    <?php endif; ?>
                 <?php elseif (($order['payment_status'] ?? '') === 'paid'): ?>
                     <p class="admin-muted">Đơn đã thanh toán — không thể thay đổi trạng thái này.</p>
                 <?php elseif (orderIsCodPaymentMethod($paymentMethodCode) && !orderPaymentBlocksAdminChange($order)): ?>
                     <p class="admin-muted">Đơn COD: chỉ cập nhật thanh toán sau khi bấm «Xác nhận đã giao».</p>
                 <?php elseif (($order['payment_status'] ?? '') === 'refunded'): ?>
                     <p class="admin-muted">Trạng thái hoàn tiền được cập nhật tự động từ mục Hoàn hàng.</p>
-                <?php elseif (orderIsPrepaidPaymentMethod($paymentMethodCode)): ?>
-                    <p class="admin-muted">Đơn chuyển khoản: tự động đánh dấu đã thanh toán khi khách đặt hàng.</p>
                 <?php elseif (orderPaymentBlocksAdminChange($order)): ?>
                     <p class="admin-muted">Không thể chỉnh sửa khi đơn đang trong quy trình hoàn hàng hoặc đã kết thúc.</p>
                 <?php else: ?>
-                    <p class="admin-muted">Trạng thái thanh toán chỉ cập nhật thủ công cho đơn COD.</p>
+                    <p class="admin-muted">Chưa xác định phương thức thanh toán của đơn này.</p>
                 <?php endif; ?>
             </div>
 
+            <?php
+            $nextStep = match ((string) $order['status']) {
+                'pending' => ['value' => 'processing', 'label' => 'Xác nhận đơn'],
+                'processing' => ['value' => 'shipped', 'label' => 'Giao hàng'],
+                'shipped' => ['value' => 'delivered', 'label' => 'Xác nhận đã giao'],
+                default => null,
+            };
+            ?>
             <form method="post" action="<?php echo e(app_url('admin-order-detail', ['code' => $order['order_code']])); ?>" class="admin-status-panel-form">
                 <?php echo csrfField(); ?>
                 <input type="hidden" name="action" value="update_fulfillment_status">
                 <input type="hidden" name="order_id" value="<?php echo (int) $order['id']; ?>">
-                <input type="hidden" name="fulfillment_status" value="delivered">
-                <h3>Trạng thái giao hàng</h3>
-                <p class="admin-status-current">Hiện tại: <strong><?php echo htmlspecialchars(orderFulfillmentStatusLabel((string) $order['fulfillment_status'])); ?></strong></p>
-                <?php
-                $canMarkDelivered = !$orderLocked
-                    && !in_array($shippingKey, ['delivered'], true)
-                    && !in_array((string) $order['status'], ['delivered', 'return_pending', 'return_accepted', 'return_received'], true);
-                ?>
-                <?php if ($canMarkDelivered): ?>
-                    <button type="submit" class="admin-btn-save">Xác nhận đã giao</button>
+                <input type="hidden" name="fulfillment_status" value="<?php echo e((string) ($nextStep['value'] ?? '')); ?>">
+                <h3>Trạng thái đơn</h3>
+                <p class="admin-status-current">Hiện tại: <strong><?php echo htmlspecialchars(orderStatusLabel((string) $order['status'])); ?></strong></p>
+                <?php if ($nextStep && !$orderLocked): ?>
+                    <button type="submit" class="admin-btn-save"><?php echo e($nextStep['label']); ?></button>
                 <?php else: ?>
-                    <button type="button" class="admin-btn-save" disabled>Xác nhận đã giao</button>
+                    <button type="button" class="admin-btn-save" disabled>Không còn bước xử lý</button>
                 <?php endif; ?>
             </form>
         </div>

@@ -39,6 +39,7 @@ function appRoutes(): array
         'admin-returns' => 'includes/admin-returns.php',
         'admin-blog' => 'includes/admin-blog.php',
         'admin-blog-comments' => 'includes/admin/admin-blog-comments.php',
+        'admin-payment-account' => 'includes/admin-payment-account.php',
     ];
 
     $titles = [
@@ -68,6 +69,7 @@ function appRoutes(): array
         'admin-returns' => 'Hoàn hàng / Khiếu nại | Winsum Home',
         'admin-blog' => 'Quản lý blog | Winsum Home',
         'admin-blog-comments' => 'Bình luận blog | Winsum Home',
+        'admin-payment-account' => 'Tài khoản nhận tiền | Winsum Home',
     ];
 
     return [

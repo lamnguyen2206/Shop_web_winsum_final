@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap/app.php';
 
+if ($is404) {
+    http_response_code(404);
+}
+
 include __DIR__ . '/includes/layout/head.php';
 include __DIR__ . '/includes/header.php';
 ?>

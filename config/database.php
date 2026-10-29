@@ -1,18 +1,42 @@
 <?php
-$host = 'localhost';
-$db   = 'winsumwebfinal';
-$user = 'root';
-$pass = '';
-$charset = 'utf8mb4';
 
-// Khởi tạo kết nối MySQLi
-$conn = new mysqli($host, $user, $pass, $db);
+/**
+ * @return array<string, mixed>
+ */
+function appConfig(): array
+{
+    static $config = null;
+    if ($config !== null) {
+        return $config;
+    }
 
-// Kiểm tra kết nối
-if ($conn->connect_error) {
-    die("LỖI KẾT NỐI DATABASE: " . $conn->connect_error);
+    $local = __DIR__ . '/local.php';
+    $example = __DIR__ . '/local.example.php';
+    $loaded = is_file($local) ? require $local : require $example;
+    if (!is_array($loaded)) {
+        $loaded = [];
+    }
+    $config = $loaded;
+
+    $overrideName = getenv('WINSUM_DB_NAME');
+    if (is_string($overrideName) && $overrideName !== '') {
+        $config['db']['name'] = $overrideName;
+    }
+
+    return $config;
 }
 
-// Thiết lập tiếng Việt
+$appDb = appConfig()['db'] ?? [];
+$host = (string) ($appDb['host'] ?? 'localhost');
+$db = (string) ($appDb['name'] ?? 'winsumwebfinal');
+$user = (string) ($appDb['user'] ?? 'root');
+$pass = (string) ($appDb['pass'] ?? '');
+$charset = (string) ($appDb['charset'] ?? 'utf8mb4');
+
+$conn = new mysqli($host, $user, $pass, $db);
+
+if ($conn->connect_error) {
+    die('LỖI KẾT NỐI DATABASE: ' . $conn->connect_error);
+}
+
 $conn->set_charset($charset);
-?>

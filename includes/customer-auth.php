@@ -24,9 +24,7 @@ function customerBootstrapAdminAccount(mysqli $conn): void
 
     $colCheck = $conn->query("SHOW COLUMNS FROM customers LIKE 'role'");
     if ($colCheck && $colCheck->num_rows === 0) {
-        $conn->query(
-            "ALTER TABLE customers ADD COLUMN role ENUM('customer', 'admin') NOT NULL DEFAULT 'customer' AFTER status"
-        );
+        return;
     }
 
     $stmt = $conn->prepare("SELECT id FROM customers WHERE role = 'admin' LIMIT 1");
@@ -40,11 +38,17 @@ function customerBootstrapAdminAccount(mysqli $conn): void
         return;
     }
 
+    $config = function_exists('appConfig') ? appConfig() : [];
+    $admin = is_array($config['admin'] ?? null) ? $config['admin'] : [];
     $code = 'ADM00001';
-    $name = 'admin';
-    $phone = '0901000000';
-    $email = 'admin@winsumhome.vn';
-    $hash = '$2y$10$LiwDdPmNl40o4nDcOw8H9O4UyStaVDFyclvHztxZjxfEP6T4Fna3K';
+    $name = (string) ($admin['name'] ?? 'admin');
+    $phone = (string) ($admin['phone'] ?? '0901000000');
+    $email = (string) ($admin['email'] ?? 'admin@winsumhome.vn');
+    $password = (string) ($admin['password'] ?? '');
+    if ($password === '') {
+        return;
+    }
+    $hash = password_hash($password, PASSWORD_DEFAULT);
     $status = 'active';
     $role = 'admin';
 
@@ -110,47 +114,89 @@ function customerLoginRateLimitMessage(): string
     return 'Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau 15 phút.';
 }
 
-function customerLoginIsRateLimited(): bool
+function customerLoginIdentifier(string $identifier): string
 {
-    $attempts = $_SESSION['login_attempts'] ?? null;
-    if (!is_array($attempts)) {
-        return false;
+    $identifier = trim($identifier);
+    if (str_contains($identifier, '@')) {
+        return mb_strtolower($identifier);
     }
 
-    $count = (int) ($attempts['count'] ?? 0);
-    $since = (int) ($attempts['since'] ?? 0);
-    if ($since <= 0) {
-        return false;
-    }
-
-    if ((time() - $since) >= customerLoginRateLimitWindowSeconds()) {
-        unset($_SESSION['login_attempts']);
-        return false;
-    }
-
-    return $count >= customerLoginRateLimitMaxAttempts();
+    return phoneNormalize($identifier);
 }
 
-function customerLoginRecordFailure(): void
+function customerLoginIsRateLimited(mysqli $conn, string $identifier): bool
 {
-    $attempts = $_SESSION['login_attempts'] ?? null;
-    if (!is_array($attempts)) {
-        $_SESSION['login_attempts'] = ['count' => 1, 'since' => time()];
-        return;
+    $key = customerLoginIdentifier($identifier);
+    if ($key === '') {
+        return false;
     }
-
-    $since = (int) ($attempts['since'] ?? 0);
+    $stmt = $conn->prepare('SELECT attempts, window_start FROM login_attempts WHERE identifier = ? LIMIT 1');
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('s', $key);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$row) {
+        return false;
+    }
+    $since = strtotime((string) $row['window_start']) ?: 0;
     if ($since <= 0 || (time() - $since) >= customerLoginRateLimitWindowSeconds()) {
-        $_SESSION['login_attempts'] = ['count' => 1, 'since' => time()];
-        return;
+        customerLoginClearAttempts($conn, $identifier);
+        return false;
     }
 
-    $_SESSION['login_attempts']['count'] = (int) ($attempts['count'] ?? 0) + 1;
+    return (int) $row['attempts'] >= customerLoginRateLimitMaxAttempts();
 }
 
-function customerLoginClearAttempts(): void
+function customerLoginRecordFailure(mysqli $conn, string $identifier): void
 {
-    unset($_SESSION['login_attempts']);
+    $key = customerLoginIdentifier($identifier);
+    if ($key === '') {
+        return;
+    }
+    $window = customerLoginRateLimitWindowSeconds();
+    $stmt = $conn->prepare('SELECT attempts, window_start FROM login_attempts WHERE identifier = ? LIMIT 1');
+    if (!$stmt) {
+        return;
+    }
+    $stmt->bind_param('s', $key);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $now = date('Y-m-d H:i:s');
+    if (!$row || (time() - (strtotime((string) $row['window_start']) ?: 0)) >= $window) {
+        $replace = $conn->prepare('INSERT INTO login_attempts (identifier, attempts, window_start) VALUES (?, 1, ?)
+                                   ON DUPLICATE KEY UPDATE attempts = 1, window_start = VALUES(window_start)');
+        if ($replace) {
+            $replace->bind_param('ss', $key, $now);
+            $replace->execute();
+            $replace->close();
+        }
+        return;
+    }
+    $update = $conn->prepare('UPDATE login_attempts SET attempts = attempts + 1 WHERE identifier = ?');
+    if ($update) {
+        $update->bind_param('s', $key);
+        $update->execute();
+        $update->close();
+    }
+}
+
+function customerLoginClearAttempts(mysqli $conn, string $identifier): void
+{
+    $key = customerLoginIdentifier($identifier);
+    if ($key === '') {
+        return;
+    }
+    $stmt = $conn->prepare('DELETE FROM login_attempts WHERE identifier = ?');
+    if (!$stmt) {
+        return;
+    }
+    $stmt->bind_param('s', $key);
+    $stmt->execute();
+    $stmt->close();
 }
 
 function customerRegister(mysqli $conn, string $fullName, string $phone, string $email, string $password): array
@@ -199,7 +245,8 @@ function customerRegister(mysqli $conn, string $fullName, string $phone, string 
 
     $_SESSION['customer_id'] = $customerId;
     session_regenerate_id(true);
-    customerLoginClearAttempts();
+    require_once __DIR__ . '/cart-store.php';
+    cartMergeGuestIntoCustomer($customerId);
     $linked = customerLinkOrdersByPhone($conn, $customerId, $phone);
     $message = 'Đăng ký thành công.';
     if ($linked > 0) {
@@ -237,7 +284,7 @@ function customerLogin(mysqli $conn, string $identifier, string $password): arra
     if ($identifier === '' || $password === '') {
         return ['ok' => false, 'message' => 'Vui lòng nhập SĐT/email và mật khẩu.'];
     }
-    if (customerLoginIsRateLimited()) {
+    if (customerLoginIsRateLimited($conn, $identifier)) {
         return ['ok' => false, 'message' => customerLoginRateLimitMessage()];
     }
 
@@ -254,8 +301,8 @@ function customerLogin(mysqli $conn, string $identifier, string $password): arra
     $stmt->close();
 
     if (!$row || !$row['password_hash'] || !password_verify($password, $row['password_hash'])) {
-        customerLoginRecordFailure();
-        if (customerLoginIsRateLimited()) {
+        customerLoginRecordFailure($conn, $identifier);
+        if (customerLoginIsRateLimited($conn, $identifier)) {
             return ['ok' => false, 'message' => customerLoginRateLimitMessage()];
         }
         return ['ok' => false, 'message' => 'Thông tin đăng nhập không chính xác.'];
@@ -266,7 +313,9 @@ function customerLogin(mysqli $conn, string $identifier, string $password): arra
 
     $_SESSION['customer_id'] = (int) $row['id'];
     session_regenerate_id(true);
-    customerLoginClearAttempts();
+    customerLoginClearAttempts($conn, $identifier);
+    require_once __DIR__ . '/cart-store.php';
+    cartMergeGuestIntoCustomer((int) $row['id']);
     require_once __DIR__ . '/admin-auth.php';
     $customer = customerGetById($conn, (int) $row['id']);
     adminSyncSessionForCustomer($customer);
@@ -280,9 +329,7 @@ function customerLogin(mysqli $conn, string $identifier, string $password): arra
 
 function customerLogout(): void
 {
-    require_once __DIR__ . '/cart-store.php';
-    cartClear();
-    unset($_SESSION['customer_id']);
+    unset($_SESSION['customer_id'], $_SESSION['cart_session_key'], $_SESSION['cart_coupon'], $_SESSION['cart_coupon_id']);
     require_once __DIR__ . '/admin-auth.php';
     adminLogout();
 }
@@ -386,4 +433,14 @@ function customerMayShopOnStorefront(?array $customer): bool
     }
 
     return ($customer['role'] ?? 'customer') !== 'admin';
+}
+
+function storefrontMayAddToCart(?array $customer): bool
+{
+    require_once __DIR__ . '/admin-auth.php';
+    if (adminCurrent()) {
+        return false;
+    }
+
+    return customerMayShopOnStorefront($customer);
 }

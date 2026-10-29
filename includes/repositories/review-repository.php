@@ -115,51 +115,6 @@ function reviewCustomerCanReviewProduct(mysqli $conn, int $customerId, int $prod
 
 function reviewEnsureSchema(mysqli $conn): void
 {
-    static $done = false;
-    if ($done) {
-        return;
-    }
-    $done = true;
-
-    $extraCols = [
-        'parent_id' => 'BIGINT DEFAULT NULL',
-        'is_admin_reply' => 'TINYINT(1) NOT NULL DEFAULT 0',
-    ];
-    foreach ($extraCols as $col => $def) {
-        $check = $conn->query("SHOW COLUMNS FROM product_reviews LIKE '" . $conn->real_escape_string($col) . "'");
-        if ($check && $check->num_rows === 0) {
-            $conn->query("ALTER TABLE product_reviews ADD COLUMN {$col} {$def}");
-        }
-        if ($check) {
-            $check->free();
-        }
-    }
-
-    $indexCheck = $conn->query("SHOW INDEX FROM product_reviews WHERE Key_name = 'idx_product_reviews_parent'");
-    if ($indexCheck && $indexCheck->num_rows === 0) {
-        $conn->query('ALTER TABLE product_reviews ADD INDEX idx_product_reviews_parent (parent_id)');
-    }
-    if ($indexCheck) {
-        $indexCheck->free();
-    }
-
-    $result = $conn->query("SELECT DISTINCT product_id FROM product_reviews WHERE status = 'pending' AND (parent_id IS NULL OR parent_id = 0) AND is_admin_reply = 0");
-    if (!$result || $result->num_rows === 0) {
-        if ($result) {
-            $result->free();
-        }
-        return;
-    }
-    $productIds = [];
-    while ($row = $result->fetch_assoc()) {
-        $productIds[] = (int) $row['product_id'];
-    }
-    $result->free();
-
-    $conn->query("UPDATE product_reviews SET status = 'approved' WHERE status = 'pending'");
-    foreach ($productIds as $productId) {
-        reviewRecalculateProductRating($conn, $productId);
-    }
 }
 
 function reviewCustomerHasReviewedProduct(mysqli $conn, int $customerId, int $productId): bool

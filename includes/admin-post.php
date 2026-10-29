@@ -37,6 +37,11 @@ function adminHandlePost(mysqli $conn, string $view): void
         return;
     }
 
+    if ((string) ($_POST['action'] ?? '') === 'save_shop_bank' && csrfValidate()) {
+        adminHandlePaymentAccountPost($conn);
+        return;
+    }
+
     $customerAdminActions = ['toggle_customer_block', 'update_customer_status'];
     if (in_array($action, $customerAdminActions, true)) {
         adminHandleCustomersPost($conn);
@@ -67,6 +72,34 @@ function adminHandlePost(mysqli $conn, string $view): void
     if ($view === 'admin-blog' && csrfValidate()) {
         adminHandleBlogPost($conn);
     }
+
+    if ($view === 'admin-payment-account' && csrfValidate()) {
+        adminHandlePaymentAccountPost($conn);
+    }
+}
+
+function adminHandlePaymentAccountPost(mysqli $conn): void
+{
+    require_once __DIR__ . '/helpers.php';
+
+    if ((string) ($_POST['action'] ?? '') !== 'save_shop_bank') {
+        redirect(app_url('admin-payment-account'));
+    }
+
+    $result = shopBankAccountSave(
+        $conn,
+        (string) ($_POST['bank_code'] ?? ''),
+        (string) ($_POST['account_number'] ?? ''),
+        (string) ($_POST['account_name'] ?? '')
+    );
+    $returnView = (string) ($_POST['return_view'] ?? 'admin-payment-account');
+    if (!in_array($returnView, ['admin-dashboard', 'admin-payment-account'], true)) {
+        $returnView = 'admin-payment-account';
+    }
+    redirect(app_url($returnView, [
+        'msg' => $result['message'],
+        'msg_ok' => $result['ok'] ? '1' : '0',
+    ]));
 }
 
 function adminHandleReturnsPost(mysqli $conn): void
@@ -158,7 +191,7 @@ function adminHandleOrdersPost(mysqli $conn, string $view): void
         }
         redirect(app_url('admin-order-detail', [
             'code' => $code,
-            'msg' => $ok ? 'Đã cập nhật trạng thái thanh toán.' : 'Không thể cập nhật thanh toán. Chỉ đơn COD đã giao mới được chỉnh thủ công.',
+            'msg' => $ok ? 'Đã cập nhật trạng thái thanh toán.' : 'Không thể cập nhật thanh toán.',
             'msg_ok' => $ok ? '1' : '0',
         ]));
     }

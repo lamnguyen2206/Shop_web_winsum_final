@@ -4,48 +4,6 @@ require_once __DIR__ . '/helpers.php';
 
 function orderEnsureSchema(mysqli $conn): void
 {
-    static $done = false;
-    if ($done) {
-        return;
-    }
-    $done = true;
-
-    $orderCols = [
-        'inventory_deducted' => 'TINYINT(1) NOT NULL DEFAULT 0',
-        'inventory_restocked' => 'TINYINT(1) NOT NULL DEFAULT 0',
-    ];
-    foreach ($orderCols as $col => $def) {
-        $check = $conn->query("SHOW COLUMNS FROM orders LIKE '" . $conn->real_escape_string($col) . "'");
-        if ($check && $check->num_rows === 0) {
-            $conn->query("ALTER TABLE orders ADD COLUMN {$col} {$def}");
-        }
-    }
-
-    $checkItem = $conn->query("SHOW COLUMNS FROM order_items LIKE 'stock_deducted'");
-    if ($checkItem && $checkItem->num_rows === 0) {
-        $conn->query('ALTER TABLE order_items ADD COLUMN stock_deducted TINYINT(1) NOT NULL DEFAULT 0');
-    }
-
-    $conn->query("UPDATE orders
-                  SET status = 'shipped', fulfillment_status = 'shipped'
-                  WHERE status IN ('pending', 'processing', 'packed')");
-
-    $conn->query("UPDATE orders
-                  SET fulfillment_status = 'shipped'
-                  WHERE fulfillment_status IN ('pending', 'processing', 'packed')
-                    AND status NOT IN ('cancelled', 'returned', 'delivered')");
-
-    $conn->query("UPDATE orders
-                  SET fulfillment_status = CASE
-                      WHEN status IN ('cancelled', 'returned') THEN status
-                      WHEN status = 'delivered' THEN 'delivered'
-                      ELSE 'shipped'
-                  END
-                  WHERE fulfillment_status IS NULL OR fulfillment_status = ''");
-
-    $conn->query("UPDATE order_shipments
-                  SET status = 'shipped', shipped_at = COALESCE(shipped_at, NOW())
-                  WHERE status IN ('pending', 'processing', 'packed')");
 }
 
 function orderGetShippingMethods(mysqli $conn): array
@@ -205,7 +163,7 @@ function orderCreateFromCheckout(
         $stmtOrder = $conn->prepare("INSERT INTO orders
             (order_code, customer_id, customer_name, customer_phone, customer_email, customer_address, customer_note,
              coupon_id, coupon_code, subtotal, shipping_fee, discount_amount, grand_total, status, fulfillment_status, payment_status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'shipped', 'shipped', ?)");
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending', ?)");
         if (!$stmtOrder) {
             throw new RuntimeException('Không tạo được lệnh lưu đơn hàng.');
         }
@@ -257,8 +215,8 @@ function orderCreateFromCheckout(
         $stmtItem->close();
 
         $stmtShipment = $conn->prepare("INSERT INTO order_shipments
-            (order_id, shipping_method_id, recipient_name, recipient_phone, recipient_address, shipping_fee, status, shipped_at)
-            VALUES (?, ?, ?, ?, ?, ?, 'shipped', NOW())");
+            (order_id, shipping_method_id, recipient_name, recipient_phone, recipient_address, shipping_fee, status)
+            VALUES (?, ?, ?, ?, ?, ?, 'pending')");
         if (!$stmtShipment) {
             throw new RuntimeException('Không tạo được lệnh vận chuyển.');
         }
@@ -287,17 +245,6 @@ function orderCreateFromCheckout(
         if ($couponIdValue) {
             require_once __DIR__ . '/coupon-repository.php';
             couponRecordRedemption($conn, (int) $couponIdValue, $customerId, $orderId);
-        }
-
-        require_once __DIR__ . '/inventory-repository.php';
-        $deductResult = inventoryDeductForOrder($conn, $cartItems, $orderId, $orderCode);
-        if (!empty($deductResult['any_deducted'])) {
-            $stmtInvFlag = $conn->prepare('UPDATE orders SET inventory_deducted = 1 WHERE id = ?');
-            if ($stmtInvFlag) {
-                $stmtInvFlag->bind_param('i', $orderId);
-                $stmtInvFlag->execute();
-                $stmtInvFlag->close();
-            }
         }
 
         $conn->commit();
@@ -332,7 +279,7 @@ function orderEnrichOrderDetail(mysqli $conn, array $order): array
 {
     $orderId = (int) $order['id'];
 
-    $stmtItems = $conn->prepare("SELECT product_sku, product_name, product_image, unit_price, quantity, line_total
+    $stmtItems = $conn->prepare("SELECT id, product_id, product_sku, product_name, product_image, unit_price, quantity, line_total
                                  FROM order_items
                                  WHERE order_id = ?
                                  ORDER BY id ASC");
@@ -590,14 +537,14 @@ function orderCanCustomerCancel(array $order): bool
     $status = (string) ($order['status'] ?? '');
     $fulfillment = (string) ($order['fulfillment_status'] ?? '');
 
-    if (in_array($status, ['cancelled', 'returned', 'delivered', 'return_pending', 'return_accepted', 'return_received'], true)) {
+    if (in_array($status, ['cancelled', 'returned', 'delivered', 'return_pending', 'return_accepted', 'return_received', 'partially_returned', 'shipped'], true)) {
         return false;
     }
-    if (in_array($fulfillment, ['delivered', 'cancelled', 'returned'], true)) {
+    if (in_array($fulfillment, ['delivered', 'cancelled', 'returned', 'shipped'], true)) {
         return false;
     }
 
-    return $status === 'shipped';
+    return in_array($status, ['pending', 'processing'], true);
 }
 
 /**
@@ -694,12 +641,18 @@ function orderApplyStatusUpdate(mysqli $conn, int $orderId, string $newStatus, s
         $fulfillment = 'cancelled';
     } elseif ($newStatus === 'returned') {
         $fulfillment = 'returned';
+    } elseif ($newStatus === 'partially_returned') {
+        $fulfillment = 'delivered';
     } elseif (in_array($newStatus, ['return_pending', 'return_accepted', 'return_received'], true)) {
         $fulfillment = 'delivered';
     } elseif ($newStatus === 'delivered') {
         $fulfillment = 'delivered';
     } elseif ($newStatus === 'shipped') {
         $fulfillment = 'shipped';
+    } elseif ($newStatus === 'processing') {
+        $fulfillment = 'processing';
+    } elseif ($newStatus === 'pending') {
+        $fulfillment = 'pending';
     }
 
     $stmt = $conn->prepare('UPDATE orders SET status = ?, fulfillment_status = ?, updated_at = NOW() WHERE id = ?');
@@ -709,6 +662,10 @@ function orderApplyStatusUpdate(mysqli $conn, int $orderId, string $newStatus, s
     $stmt->bind_param('ssi', $newStatus, $fulfillment, $orderId);
     $stmt->execute();
     $stmt->close();
+
+    if ($newStatus === 'shipped') {
+        orderDeductInventoryOnShip($conn, $orderId);
+    }
 
     if ($newStatus === 'delivered') {
         orderMarkDeliveredSideEffects($conn, $orderId);
@@ -807,13 +764,11 @@ function orderUpdatePaymentStatus(mysqli $conn, int $orderId, string $newStatus,
         $stmtPm->execute();
         $pmRow = $stmtPm->get_result()->fetch_assoc();
         $stmtPm->close();
-        if (!orderIsCodPaymentMethod((string) ($pmRow['code'] ?? ''))) {
-            return false;
-        }
-
-        if ($newStatus === 'paid') {
+        $methodCode = (string) ($pmRow['code'] ?? '');
+        if ($newStatus === 'paid' && orderIsCodPaymentMethod($methodCode)) {
             $delivered = (string) ($current['status'] ?? '') === 'delivered'
-                || (string) ($current['fulfillment_status'] ?? '') === 'delivered';
+                || (string) ($current['fulfillment_status'] ?? '') === 'delivered'
+                || (string) ($current['status'] ?? '') === 'partially_returned';
             if (!$delivered) {
                 return false;
             }
@@ -859,9 +814,64 @@ function orderUpdatePaymentStatus(mysqli $conn, int $orderId, string $newStatus,
     }
 }
 
+function orderDeductInventoryOnShip(mysqli $conn, int $orderId): void
+{
+    $stmtOrder = $conn->prepare('SELECT order_code, inventory_deducted FROM orders WHERE id = ? LIMIT 1 FOR UPDATE');
+    if (!$stmtOrder) {
+        throw new RuntimeException('Không đọc được đơn hàng để trừ kho.');
+    }
+    $stmtOrder->bind_param('i', $orderId);
+    $stmtOrder->execute();
+    $order = $stmtOrder->get_result()->fetch_assoc();
+    $stmtOrder->close();
+    if (!$order) {
+        throw new RuntimeException('Không tìm thấy đơn hàng để trừ kho.');
+    }
+    if ((int) ($order['inventory_deducted'] ?? 0) === 1) {
+        return;
+    }
+
+    $stmtItems = $conn->prepare('SELECT product_id, quantity FROM order_items WHERE order_id = ? AND product_id IS NOT NULL');
+    if (!$stmtItems) {
+        throw new RuntimeException('Không đọc được dòng hàng để trừ kho.');
+    }
+    $stmtItems->bind_param('i', $orderId);
+    $stmtItems->execute();
+    $result = $stmtItems->get_result();
+    $cartItems = [];
+    while ($row = $result->fetch_assoc()) {
+        $cartItems[] = [
+            'product_id' => (int) $row['product_id'],
+            'qty' => (int) $row['quantity'],
+        ];
+    }
+    $stmtItems->close();
+
+    require_once __DIR__ . '/inventory-repository.php';
+    $deductResult = inventoryDeductForOrder($conn, $cartItems, $orderId, (string) $order['order_code']);
+    if (!empty($deductResult['any_deducted'])) {
+        $stmtFlag = $conn->prepare('UPDATE orders SET inventory_deducted = 1 WHERE id = ?');
+        if (!$stmtFlag) {
+            throw new RuntimeException('Không ghi nhận được trạng thái trừ kho.');
+        }
+        $stmtFlag->bind_param('i', $orderId);
+        $stmtFlag->execute();
+        $stmtFlag->close();
+    }
+
+    $stmtShip = $conn->prepare("UPDATE order_shipments
+                                SET status = 'shipping', shipped_at = COALESCE(shipped_at, NOW()), updated_at = NOW()
+                                WHERE order_id = ?");
+    if ($stmtShip) {
+        $stmtShip->bind_param('i', $orderId);
+        $stmtShip->execute();
+        $stmtShip->close();
+    }
+}
+
 function orderUpdateFulfillmentStatus(mysqli $conn, int $orderId, string $newStatus, string $changedBy = 'admin'): bool
 {
-    $allowed = ['shipped', 'delivered', 'cancelled'];
+    $allowed = ['processing', 'shipped', 'delivered', 'cancelled'];
     if (!in_array($newStatus, $allowed, true)) {
         return false;
     }
@@ -879,27 +889,34 @@ function orderUpdateFulfillmentStatus(mysqli $conn, int $orderId, string $newSta
     }
 
     $orderStatus = (string) $current['status'];
-    $fromStatus = (string) $current['fulfillment_status'];
-    if (orderFulfillmentBlocksAdminChange($current) && $newStatus !== $fromStatus) {
+    if (orderFulfillmentBlocksAdminChange($current)) {
+        return false;
+    }
+
+    $allowedFrom = match ($newStatus) {
+        'processing' => ['pending'],
+        'shipped' => ['processing'],
+        'delivered' => ['shipped'],
+        'cancelled' => ['pending', 'processing'],
+        default => [],
+    };
+    if (!in_array($orderStatus, $allowedFrom, true)) {
         return false;
     }
 
     $conn->begin_transaction();
     try {
-        $nextOrderStatus = match ($newStatus) {
-            'shipped' => 'shipped',
-            'delivered' => 'delivered',
-            'cancelled' => 'cancelled',
-            default => $orderStatus,
-        };
-
         $stmt = $conn->prepare('UPDATE orders SET status = ?, fulfillment_status = ?, updated_at = NOW() WHERE id = ?');
         if (!$stmt) {
             throw new RuntimeException('Không cập nhật trạng thái giao hàng.');
         }
-        $stmt->bind_param('ssi', $nextOrderStatus, $newStatus, $orderId);
+        $stmt->bind_param('ssi', $newStatus, $newStatus, $orderId);
         $stmt->execute();
         $stmt->close();
+
+        if ($newStatus === 'shipped') {
+            orderDeductInventoryOnShip($conn, $orderId);
+        }
 
         if ($newStatus === 'cancelled') {
             orderMaybeRestockInventory($conn, $orderId);
@@ -920,14 +937,17 @@ function orderUpdateFulfillmentStatus(mysqli $conn, int $orderId, string $newSta
 function orderStatusLabel(string $status): string
 {
     return match ($status) {
+        'pending' => 'Chờ xác nhận',
+        'processing' => 'Đang xử lý',
         'shipped' => 'Đang giao hàng',
         'delivered' => 'Đã giao hàng',
         'cancelled' => 'Đã hủy',
         'return_pending' => 'Chờ Admin duyệt hoàn hàng',
         'return_accepted' => 'Chờ khách trả hàng',
         'return_received' => 'Đã nhận hàng hoàn — chờ hoàn tiền',
+        'partially_returned' => 'Hoàn một phần',
         'returned' => 'Hoàn hàng thành công',
-        default => 'Đang giao hàng',
+        default => 'Không xác định',
     };
 }
 
@@ -945,11 +965,14 @@ function orderPaymentStatusLabel(string $status): string
 function orderFulfillmentStatusLabel(string $status): string
 {
     return match ($status) {
+        'pending' => 'Chờ xác nhận',
+        'processing' => 'Đang xử lý',
+        'packed' => 'Đã đóng gói',
         'shipped' => 'Đang giao hàng',
         'delivered' => 'Đã giao hàng',
         'cancelled' => 'Đã hủy giao',
         'returned' => 'Đã hoàn trả',
-        default => 'Đang giao hàng',
+        default => 'Không xác định',
     };
 }
 
@@ -980,8 +1003,7 @@ function orderIsCodPaymentMethod(string $code): bool
 
 function orderIsPrepaidPaymentMethod(string $code): bool
 {
-    // VietQR / chuyển khoản: khách xác nhận qua nút demo sau khi quét QR (confirm_vietqr_demo).
-    // COD: admin cập nhật paid thủ công sau khi giao hàng.
+    // Chuyển khoản và COD đều unpaid cho đến khi admin xác nhận đã nhận tiền.
     return false;
 }
 
@@ -1011,10 +1033,12 @@ function orderAdminCanUpdatePaymentStatus(array $order): bool
         return false;
     }
 
-    if (!orderIsCodPaymentMethod((string) ($order['payment']['payment_method_code'] ?? ''))) {
-        return false;
+    $methodCode = (string) ($order['payment']['payment_method_code'] ?? '');
+    if (orderIsCodPaymentMethod($methodCode)) {
+        return (string) ($order['status'] ?? '') === 'delivered'
+            || (string) ($order['status'] ?? '') === 'partially_returned'
+            || (string) ($order['fulfillment_status'] ?? '') === 'delivered';
     }
 
-    return (string) ($order['status'] ?? '') === 'delivered'
-        || (string) ($order['fulfillment_status'] ?? '') === 'delivered';
+    return $methodCode !== '';
 }

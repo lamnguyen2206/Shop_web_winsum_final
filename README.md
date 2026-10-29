@@ -49,51 +49,38 @@ C:\xampp\htdocs\webwinsum
 ```bash
 mysql -u root -e "CREATE DATABASE IF NOT EXISTS winsumwebfinal CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 mysql -u root winsumwebfinal < winsumwebfinal.sql
+php scripts/migrate.php
 ```
 
-Hoặc phpMyAdmin → Import → `winsumwebfinal.sql`.
+`scripts/migrate.php` thêm bảng giỏ hàng, khóa đăng nhập, dòng hoàn hàng và các cột schema còn thiếu. Chạy một lần. Lần sau script báo đã áp dụng.
+
+Hoặc phpMyAdmin → Import → `winsumwebfinal.sql`, rồi chạy `php scripts/migrate.php`.
 
 ### 3. Cấu hình DB
 
-`config/database.php`:
-
-```php
-$host = 'localhost';  
-$db   = 'winsumwebfinal';
-$user = 'root';
-$pass = '';
-```
+Copy `config/local.example.php` thành `config/local.php` rồi điền mật khẩu MySQL, tài khoản quản trị và số tài khoản nhận chuyển khoản của cửa hàng. Ứng dụng đọc file đó qua `config/database.php`. Không commit `config/local.php`.
 
 ### 4. Chạy
 
 1. XAMPP: bật Apache + MySQL  
-2. Trình duyệt: `http://localhost/webwinsum`
+2. Trình duyệt: `http://localhost/webwinsum` (hoặc thư mục bạn đặt mã nguồn)
 
 ### 5. Bootstrap lần đầu
 
-`bootstrap/app.php` tự gọi:
-
-| Hàm | Việc làm |
-| --- | --- |
-| `customerBootstrapAdminAccount()` | Thêm cột `customers.role`, tạo admin mặc định |
-| `orderEnsureSchema()` | Cột `inventory_deducted`, đồng bộ trạng thái đơn cũ |
-| `returnEnsureSchema()` | Bảng / cột hoàn hàng |
-| `reviewEnsureSchema()` | Schema đánh giá SP |
-| `blogCommentEnsureTable()` | Bình luận blog |
-| `inventoryEnsureAlertsTable()` | Cảnh báo tồn kho |
+`bootstrap/app.php` tạo tài khoản admin nếu chưa có, dùng mật khẩu trong `config/local.php` (mặc định xem `config/local.example.php`). Schema không còn bị `ALTER` trên mỗi request.
 
 ---
 
-## Tài khoản demo
+## Tài khoản quản trị
 
 Admin và khách dùng **cùng form đăng nhập** trên header (modal). Admin được nhận diện qua `customers.role = 'admin'`, không có bảng admin riêng.
 
 | Vai trò | Đăng nhập |
 | --- | --- |
-| **Admin** | SĐT `0901000000` hoặc email `admin@winsumhome.vn` / mật khẩu `admin123` |
+| **Admin** | SĐT và mật khẩu trong `config/local.example.php` (mặc định SĐT `0901000000`, email `admin@winsumhome.vn`) |
 | **Khách** | Đăng ký qua popup **Đăng ký** |
 
-Tài khoản admin do `customerBootstrapAdminAccount()` tạo nếu DB chưa có user `role = admin`.
+Tài khoản admin do `customerBootstrapAdminAccount()` tạo nếu DB chưa có user `role = admin`. Mật khẩu được hash lúc tạo, không gắn cứng trong mã nguồn.
 
 **Mã giảm giá** (seed trong `winsumwebfinal.sql`): `WINSUMXINCHAO`, `WINSUM10`, `FREESHIP`, `HELLO2026` — nhập tại trang Giỏ hàng.
 
@@ -146,7 +133,7 @@ View không tồn tại → fallback `home` + banner 404 (`includes/errors/404.p
 
 | Handler | File | Ví dụ action |
 | --- | --- | --- |
-| Storefront | `includes/handlers/storefront-post.php` | Thêm giỏ, checkout, hủy đơn, VietQR demo |
+| Storefront | `includes/handlers/storefront-post.php` | Thêm giỏ, checkout, hủy đơn, chuyển khoản |
 | Admin | `includes/admin-post.php` | CRUD SP, cập nhật đơn, duyệt hoàn |
 | Auth | `includes/customer-auth-post.php` | Đăng ký, đăng nhập, đăng xuất |
 | Blog editor | `includes/blog-editor-handler.php` | Lưu / upload ảnh blog |
@@ -191,12 +178,14 @@ Pattern **PRG** (Post-Redirect-Get): xử lý POST → `redirect()` → render G
 
 ### Đặt hàng — `orderCreateFromCheckout()`
 
-1. Validate giỏ (`cart-store.php`) và coupon trong transaction  
-2. INSERT `orders` — mặc định `status = shipped`, `fulfillment_status = shipped`, `payment_status = unpaid`  
-3. INSERT `order_items`, `order_payments`, `order_shipments`  
-4. `inventoryDeductForOrder()` → cập nhật `inventory_items.quantity_on_hand`  
-5. Ghi `coupon_redemptions` nếu có mã  
-6. `cartClear()` — xóa session giỏ  
+1. Validate giỏ (`cart-store.php`, lưu ở bảng `carts` / `cart_items`) và coupon trong transaction  
+2. INSERT `orders` — mặc định `status = pending`, `fulfillment_status = pending`, `payment_status = unpaid`  
+3. INSERT `order_items`, `order_payments`, `order_shipments` (`pending`)  
+4. Ghi `coupon_redemptions` nếu có mã  
+5. `cartClear()` — xóa dòng giỏ trong database  
+6. Gửi email xác nhận nếu khách có email. Mặc định ghi file trong `storage/mail/`. SMTP chỉ gửi khi `config/local.php` đặt `mail.transport = smtp`.
+
+Kho chỉ bị trừ khi admin chuyển đơn từ `processing` sang `shipped`.
 
 Mã đơn: `WS` + `md` + 4 số ngẫu nhiên (ví dụ `WS06161234`).
 
@@ -204,8 +193,8 @@ Mã đơn: `WS` + `md` + 4 số ngẫu nhiên (ví dụ `WS06161234`).
 
 | Code | Hiển thị | Hành vi |
 | --- | --- | --- |
-| `cod` | Thanh toán khi nhận hàng | `unpaid` → admin cập nhật `paid` sau giao |
-| `bank_transfer` | Chuyển khoản VietQR | `unpaid` → khách bấm **«Tôi đã thanh toán»** (`confirm_vietqr_demo`) → `paid` |
+| `cod` | Thanh toán khi nhận hàng | `unpaid` cho đến khi admin đánh dấu `paid` sau khi đã giao |
+| `bank_transfer` | Chuyển khoản | Hiện số tài khoản admin đã lưu ở mục **Tài khoản nhận tiền**, kèm mã QR. `unpaid` cho đến khi admin xác nhận đã nhận tiền |
 
 ### Vận chuyển (seed `shipping_methods`)
 
@@ -220,18 +209,23 @@ Phí lưu session `selected_shipping_fee` trước checkout.
 
 | `orders.status` | Nhãn UI | Ghi chú |
 | --- | --- | --- |
-| `shipped` | Đang giao hàng | Mặc định khi đặt — rút gọn demo |
-| `delivered` | Đã giao hàng | Admin xác nhận trên `admin-order-detail` |
-| `cancelled` | Đã hủy | Khách hủy khi `shipped`; hoàn kho |
+| `pending` | Chờ xác nhận | Mặc định khi đặt. Chưa trừ kho. Khách được hủy |
+| `processing` | Đang xử lý | Admin xác nhận đơn. Khách vẫn được hủy |
+| `shipped` | Đang giao hàng | Admin giao hàng. Lúc này mới trừ kho |
+| `delivered` | Đã giao hàng | Admin xác nhận đã giao |
+| `cancelled` | Đã hủy | Khách hủy khi `pending` hoặc `processing`. Hoàn kho nếu đã trừ |
+| `partially_returned` | Hoàn một phần | Đã hoàn một số dòng. Có thể hoàn tiếp phần còn lại |
 | `return_pending` … `returned` | Luồng hoàn | Đồng bộ với `order_return_requests` |
 
 Theo dõi thêm: `payment_status` (`unpaid` / `paid` / `refunded`), `fulfillment_status`.
 
 ### Hoàn hàng — `return-repository.php`
 
-- Khách gửi yêu cầu trong **7 ngày** sau `delivered`  
-- Bảng `order_return_requests.status`: `pending` → `accepted` → `goods_received` → `completed` (hoặc `rejected`)  
-- Admin xử lý tại `admin-returns`; hoàn kho khi nhận hàng trả; `refunded` + release coupon khi hoàn tiền xong  
+- Khách chọn từng dòng và số lượng trong **7 ngày** sau `delivered` (kể cả sau một lần hoàn một phần)
+- Bảng `order_return_requests` kèm `order_return_items`
+- Tiền hoàn bằng tổng dòng được chọn. Phí ship chỉ hoàn khi trả hết mọi dòng
+- Trả hết thì `orders.status = returned` và nhả mã giảm giá. Trả một phần thì `partially_returned`, mã giảm giá giữ nguyên
+- Admin xử lý tại `admin-returns`; hoàn kho đúng số lượng dòng đã chọn  
 
 ### Doanh thu dashboard — `adminGetDashboardStats()`
 
@@ -243,11 +237,11 @@ Theo dõi thêm: `payment_status` (`unpaid` / `paid` / `refunded`), `fulfillment
 
 ### Quy tắc khác
 
-- **Giỏ hàng:** PHP Session — không có bảng `carts`  
+- **Giỏ hàng:** bảng `carts` và `cart_items`. Khách vãng lai theo `session_key`. Đăng nhập thì gộp vào giỏ của khách  
 - **Đánh giá:** Chỉ sau giao; một lần / SP / khách (`review-repository.php`)  
 - **Bình luận blog:** Hiển thị ngay; admin trả lời / xóa  
 - **Catalog lọc:** `category`, `color`, `min_price`, `max_price`, `q`, `sort` (`productBuildFiltersFromRequest()`)  
-- **Admin tasks:** Đếm đơn shipped, COD chưa thu, hoàn chờ duyệt, tồn kho thấp  
+- **Admin tasks:** Đếm đơn chờ xử lý, đơn đang giao, COD chưa thu, hoàn chờ duyệt, tồn kho thấp  
 
 ---
 
@@ -255,7 +249,7 @@ Theo dõi thêm: `payment_status` (`unpaid` / `paid` / `refunded`), `fulfillment
 
 | Key | File | Mục đích |
 | --- | --- | --- |
-| `cart_items` | `cart-store.php` | Dòng giỏ hàng |
+| `cart_items` | `carts` / `cart_items` | Dòng giỏ hàng |
 | `cart_coupon`, `cart_coupon_id` | `cart-store.php` | Mã giảm giá |
 | `selected_shipping_fee`, `checkout_shipping_method_id` | checkout flow | Phí ship |
 | `checkout_payment_method_id` | checkout flow | PT thanh toán |
@@ -263,24 +257,25 @@ Theo dõi thêm: `payment_status` (`unpaid` / `paid` / `refunded`), `fulfillment
 | `admin_logged_in`, `customer_role` | `admin-auth.php` | Quyền admin |
 | `csrf_token` | `csrf.php` | CSRF |
 | `auth_flash`, `page_flash` | auth / flash | Thông báo |
-| `login_attempts` | `customer-auth.php` | Khóa 5 lần sai / 15 phút |
+| `login_attempts` | bảng `login_attempts` | Khóa 5 lần sai / 15 phút theo SĐT hoặc email |
 | `last_order_code`, `last_order_phone` | checkout | Tra cứu guest |
-| `checkout_result` | checkout | Kết quả / VietQR demo |
+| `checkout_result` | checkout | Kết quả đặt hàng |
 | `admin_tasks_seen` | `admin-tasks.php` | Banner nhắc việc admin |
 
 ---
 
 ## Cơ sở dữ liệu
 
-Database **`winsumwebfinal`** — 19 bảng:
+Database **`winsumwebfinal`** — các bảng nghiệp vụ cộng thêm `carts`, `cart_items`, `login_attempts`, `order_return_items`, `schema_migrations`:
 
 ```
 customers
 products, product_images, categories, product_reviews
-orders, order_items, order_payments, order_shipments, order_return_requests
+orders, order_items, order_payments, order_shipments, order_return_requests, order_return_items
 coupons, coupon_redemptions, payment_methods, shipping_methods
 inventory_items, inventory_alerts
 blog_categories, blog_posts, blog_comments
+carts, cart_items, login_attempts
 ```
 
 - Snapshot khách trên `orders` (`customer_name`, `customer_phone`, `customer_address`)  
@@ -332,17 +327,26 @@ webwinsum/
 - `adminRequire()` chặn view admin  
 - Khách chỉ thao tác đơn của mình  
 - Helper `e()` escape HTML  
-- Giới hạn đăng nhập sai (`login_attempts`)  
+- Khóa đăng nhập sai theo SĐT/email trong `login_attempts` (5 lần / 15 phút)  
+- HTML blog chỉ giữ liên kết `http`, `https` hoặc đường dẫn nội bộ  
+
+Tài khoản quản trị và số tài khoản nhận tiền nằm ở `config/local.example.php`. Mật khẩu được hash lúc tạo, không gắn cứng trong source.  
 
 ---
 
 ## Hạn chế
 
-- VietQR chỉ demo — không webhook ngân hàng  
-- Đơn mới vào thẳng `shipped`, không có `pending` / `processing`  
-- Chưa email/SMS  
-- Chưa test tự động  
-- Hoàn hàng theo cả đơn, không theo từng dòng SP  
+- Chuyển khoản hiện tài khoản cửa hàng và mã QR. Admin xác nhận đã nhận tiền trên web, không có webhook ngân hàng  
+- Chưa email SMTP mặc định; thư xác nhận đơn ghi ở `storage/mail/`  
+- Hoàn hàng theo dòng đã chọn, không tự hoàn một phần tiền trên cổng thanh toán  
+
+## Kiểm thử
+
+```bash
+php tests/run.php
+```
+
+Script tạo database `winsumwebfinal_test` nếu chưa có, import SQL, chạy migrate, rồi kiểm tra: đơn mới là `pending` và chỉ trừ kho khi `shipped`, mã giảm giá hết lượt bị từ chối, khách không xem đơn của người khác, admin không thêm được vào giỏ.  
 
 ---
 
