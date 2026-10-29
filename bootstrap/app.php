@@ -30,6 +30,10 @@ blogEnsureDefaults($conn);
 $requestedView = isset($_GET['view'])
     ? (string) $_GET['view']
     : (isset($_POST['view']) ? (string) $_POST['view'] : 'home');
+$requestedView = rtrim(trim($requestedView), '.');
+if ($requestedView === '') {
+    $requestedView = 'home';
+}
 $resolved = appResolveView($requestedView);
 $view = $resolved['view'];
 
