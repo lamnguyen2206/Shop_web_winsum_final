@@ -28,4 +28,9 @@ return [
         'smtp_user' => '',
         'smtp_pass' => '',
     ],
+    'bank' => [
+        'code' => 'MB',
+        'account_number' => '',
+        'account_name' => 'WINSUM HOME',
+    ],
 ];

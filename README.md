@@ -58,7 +58,7 @@ Hoặc phpMyAdmin → Import → `winsumwebfinal.sql`, rồi chạy `php scripts
 
 ### 3. Cấu hình DB
 
-Copy `config/local.example.php` thành `config/local.php` nếu mật khẩu MySQL hoặc tài khoản admin demo khác máy mặc định. Ứng dụng đọc file đó qua `config/database.php`. Không commit `config/local.php`.
+Copy `config/local.example.php` thành `config/local.php` rồi điền mật khẩu MySQL, tài khoản quản trị và số tài khoản nhận chuyển khoản của cửa hàng. Ứng dụng đọc file đó qua `config/database.php`. Không commit `config/local.php`.
 
 ### 4. Chạy
 
@@ -71,7 +71,7 @@ Copy `config/local.example.php` thành `config/local.php` nếu mật khẩu MyS
 
 ---
 
-## Tài khoản demo
+## Tài khoản quản trị
 
 Admin và khách dùng **cùng form đăng nhập** trên header (modal). Admin được nhận diện qua `customers.role = 'admin'`, không có bảng admin riêng.
 
@@ -133,7 +133,7 @@ View không tồn tại → fallback `home` + banner 404 (`includes/errors/404.p
 
 | Handler | File | Ví dụ action |
 | --- | --- | --- |
-| Storefront | `includes/handlers/storefront-post.php` | Thêm giỏ, checkout, hủy đơn, VietQR demo |
+| Storefront | `includes/handlers/storefront-post.php` | Thêm giỏ, checkout, hủy đơn, chuyển khoản |
 | Admin | `includes/admin-post.php` | CRUD SP, cập nhật đơn, duyệt hoàn |
 | Auth | `includes/customer-auth-post.php` | Đăng ký, đăng nhập, đăng xuất |
 | Blog editor | `includes/blog-editor-handler.php` | Lưu / upload ảnh blog |
@@ -194,7 +194,7 @@ Mã đơn: `WS` + `md` + 4 số ngẫu nhiên (ví dụ `WS06161234`).
 | Code | Hiển thị | Hành vi |
 | --- | --- | --- |
 | `cod` | Thanh toán khi nhận hàng | `unpaid` cho đến khi admin đánh dấu `paid` sau khi đã giao |
-| `bank_transfer` | Chuyển khoản VietQR | Hiện mã QR. `unpaid` cho đến khi admin xác nhận đã nhận tiền |
+| `bank_transfer` | Chuyển khoản | Hiện số tài khoản cửa hàng trong `config/local.php` và mã QR nếu đã khai báo. `unpaid` cho đến khi admin xác nhận đã nhận tiền |
 
 ### Vận chuyển (seed `shipping_methods`)
 
@@ -259,7 +259,7 @@ Theo dõi thêm: `payment_status` (`unpaid` / `paid` / `refunded`), `fulfillment
 | `auth_flash`, `page_flash` | auth / flash | Thông báo |
 | `login_attempts` | bảng `login_attempts` | Khóa 5 lần sai / 15 phút theo SĐT hoặc email |
 | `last_order_code`, `last_order_phone` | checkout | Tra cứu guest |
-| `checkout_result` | checkout | Kết quả / VietQR demo |
+| `checkout_result` | checkout | Kết quả đặt hàng |
 | `admin_tasks_seen` | `admin-tasks.php` | Banner nhắc việc admin |
 
 ---
@@ -330,13 +330,13 @@ webwinsum/
 - Khóa đăng nhập sai theo SĐT/email trong `login_attempts` (5 lần / 15 phút)  
 - HTML blog chỉ giữ liên kết `http`, `https` hoặc đường dẫn nội bộ  
 
-Tài khoản demo nằm ở `config/local.example.php`, không ghi hash mật khẩu trong source.  
+Tài khoản quản trị và số tài khoản nhận tiền nằm ở `config/local.example.php`. Mật khẩu được hash lúc tạo, không gắn cứng trong source.  
 
 ---
 
 ## Hạn chế
 
-- VietQR chỉ hiện mã chuyển khoản — admin xác nhận đã nhận tiền, không có webhook ngân hàng  
+- Chuyển khoản hiện tài khoản cửa hàng và mã QR. Admin xác nhận đã nhận tiền trên web, không có webhook ngân hàng  
 - Chưa email SMTP mặc định; thư xác nhận đơn ghi ở `storage/mail/`  
 - Hoàn hàng theo dòng đã chọn, không tự hoàn một phần tiền trên cổng thanh toán  
 

@@ -43,3 +43,20 @@ function phoneIsValidVietnamMobile(string $phone): bool
 {
     return preg_match('/^0\d{9}$/', phoneNormalize($phone)) === 1;
 }
+
+/**
+ * Tài khoản nhận chuyển khoản của cửa hàng, khai báo trong config/local.php.
+ *
+ * @return array{code:string,account_number:string,account_name:string}
+ */
+function shopBankAccount(): array
+{
+    $config = function_exists('appConfig') ? appConfig() : [];
+    $bank = is_array($config['bank'] ?? null) ? $config['bank'] : [];
+
+    return [
+        'code' => trim((string) ($bank['code'] ?? '')),
+        'account_number' => preg_replace('/\D+/', '', (string) ($bank['account_number'] ?? '')) ?? '',
+        'account_name' => trim((string) ($bank['account_name'] ?? '')),
+    ];
+}

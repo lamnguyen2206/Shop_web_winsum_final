@@ -83,43 +83,46 @@ $checkoutCanSubmit = !$checkoutBlockedAdmin
         <?php
         $registerPhone = trim((string) ($_SESSION['last_order_phone'] ?? ''));
         $registerParams = $registerPhone !== '' ? ['phone' => $registerPhone] : [];
-        $showVietQrDemo = $orderCode !== ''
+        $showBankTransfer = $orderCode !== ''
             && $orderTotal > 0
             && in_array($orderPaymentCode, ['bank_transfer', 'vietqr'], true);
-        $vietQrBankCode = 'MB';
-        $vietQrAccountNumber = '0123456789';
-        $vietQrAccountName = 'WINSUM HOME';
+        $shopBank = shopBankAccount();
         $vietQrTransferContent = $orderCode;
-        $vietQrImageUrl = 'https://img.vietqr.io/image/'
-            . rawurlencode($vietQrBankCode)
-            . '-'
-            . rawurlencode($vietQrAccountNumber)
-            . '-compact2.png?'
-            . http_build_query([
-                'amount' => $orderTotal,
-                'addInfo' => $vietQrTransferContent,
-                'accountName' => $vietQrAccountName,
-            ]);
+        $vietQrImageUrl = '';
+        if ($shopBank['code'] !== '' && $shopBank['account_number'] !== '') {
+            $vietQrImageUrl = 'https://img.vietqr.io/image/'
+                . rawurlencode($shopBank['code'])
+                . '-'
+                . rawurlencode($shopBank['account_number'])
+                . '-compact2.png?'
+                . http_build_query([
+                    'amount' => $orderTotal,
+                    'addInfo' => $vietQrTransferContent,
+                    'accountName' => $shopBank['account_name'],
+                ]);
+        }
         ?>
         <div class="checkout-success-box">
             <p>Cảm ơn bạn! Đơn hàng đã được ghi nhận.</p>
-            <?php if ($showVietQrDemo): ?>
-                <div class="vietqr-demo-box">
+            <?php if ($showBankTransfer): ?>
+                <div class="bank-transfer-box">
                     <h2>Thanh toán chuyển khoản</h2>
-                    <p>Quét mã QR để chuyển khoản. Đơn ở trạng thái chờ xác nhận cho đến khi quản trị xác nhận đã nhận tiền.</p>
-                    <img src="<?php echo e($vietQrImageUrl); ?>" alt="Mã QR thanh toán VietQR cho đơn <?php echo e($orderCode); ?>">
+                    <p>Chuyển đúng số tiền và nội dung bên dưới. Đơn giữ trạng thái chưa thanh toán cho đến khi quản trị xác nhận đã nhận tiền.</p>
+                    <?php if ($vietQrImageUrl !== ''): ?>
+                        <img src="<?php echo e($vietQrImageUrl); ?>" alt="Mã QR chuyển khoản cho đơn <?php echo e($orderCode); ?>">
+                    <?php endif; ?>
                     <dl>
                         <div>
                             <dt>Ngân hàng</dt>
-                            <dd><?php echo e($vietQrBankCode); ?></dd>
+                            <dd><?php echo e($shopBank['code'] !== '' ? $shopBank['code'] : 'Chưa khai báo'); ?></dd>
                         </div>
                         <div>
                             <dt>Số tài khoản</dt>
-                            <dd><?php echo e($vietQrAccountNumber); ?></dd>
+                            <dd><?php echo e($shopBank['account_number'] !== '' ? $shopBank['account_number'] : 'Chưa khai báo trong config/local.php'); ?></dd>
                         </div>
                         <div>
                             <dt>Chủ tài khoản</dt>
-                            <dd><?php echo e($vietQrAccountName); ?></dd>
+                            <dd><?php echo e($shopBank['account_name'] !== '' ? $shopBank['account_name'] : 'Chưa khai báo'); ?></dd>
                         </div>
                         <div>
                             <dt>Số tiền</dt>
@@ -130,7 +133,7 @@ $checkoutCanSubmit = !$checkoutBlockedAdmin
                             <dd><?php echo e($vietQrTransferContent); ?></dd>
                         </div>
                     </dl>
-                    <small>Mã QR chỉ để chuyển khoản. Hệ thống không tự đánh dấu đã thanh toán.</small>
+                    <small>Hệ thống không tự đánh dấu đã thanh toán. Quản trị xác nhận sau khi tiền vào tài khoản cửa hàng.</small>
                 </div>
             <?php elseif ($orderPaymentName !== ''): ?>
                 <p>Phương thức thanh toán: <?php echo e($orderPaymentName); ?></p>
