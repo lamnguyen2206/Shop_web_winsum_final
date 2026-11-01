@@ -101,6 +101,18 @@ File Manager → `public_html/config/` → copy `local.example.php` thành `loca
 
 Đổi mật khẩu admin **trước** khi mở web lần đầu: tài khoản admin được tạo ở request đầu tiên từ giá trị này. Muốn gửi email thật, đặt `mail.transport = 'smtp'` và điền SMTP (Hostinger: `smtp.hostinger.com`, port 587 với email theo tên miền).
 
+### 5. Phiên bản PHP và quyền ghi
+
+- hPanel → **Advanced → PHP Configuration** → chọn PHP 8.1 hoặc 8.2, tick `mysqli`, `mbstring`, `fileinfo`; `display_errors` tắt.  
+- File Manager → chmod `755` cho `assets/images/blog-uploads`, `assets/images/return-uploads`, `storage/mail` (Hostinger mặc định đã ghi được).  
+
+### 6. SSL và kiểm tra
+
+- hPanel → **Security → SSL** → cài SSL miễn phí → bật **Force HTTPS**.  
+- Mở `https://<tên-miền>/` → trang chủ; `/index.php?view=catalog`; đăng nhập admin bằng SĐT/email trong `local.php` → **Bảng quản trị** → kiểm tra form **Tài khoản nhận tiền**.  
+- Thử mở `/config/local.php`, `/winsumwebfinal.sql`, `/sql/` → phải bị **403**.  
+- Nếu lỗi DB, trang báo "Hệ thống đang bảo trì"; chi tiết ghi ở hPanel → **Files → Error log** (hoặc đặt tạm `debug => true`).
+
 ### 7. Webhook chuyển khoản (SePay) — trang tự nhảy khi tiền vào
 
 1. Đăng ký [SePay](https://my.sepay.vn) → kết nối đúng số tài khoản đã khai trên **Tài khoản nhận tiền**.  
@@ -114,18 +126,6 @@ File Manager → `public_html/config/` → copy `local.example.php` thành `loca
 SePay gửi header `Authorization: Apikey ...`. Nếu hosting không chuyển header này, thêm `?token=API_KEY_SEPAY` vào URL webhook.  
 4. Khách đặt hàng (VietQR) **giữ trang thanh toán**; khi tiền vào, webhook đánh đơn `paid` và JS chuyển sang `view=order-paid`. Nội dung CK phải chứa mã đơn (`WS` + 8 số, đã in trên QR).  
 5. phpMyAdmin chạy `sql/migrations/003_payment_webhook.sql` nếu DB được import trước khi có file này.
-
-### 5. Phiên bản PHP và quyền ghi
-
-- hPanel → **Advanced → PHP Configuration** → chọn PHP 8.1 hoặc 8.2, tick `mysqli`, `mbstring`, `fileinfo`; `display_errors` tắt.  
-- File Manager → chmod `755` cho `assets/images/blog-uploads`, `assets/images/return-uploads`, `storage/mail` (Hostinger mặc định đã ghi được).  
-
-### 6. SSL và kiểm tra
-
-- hPanel → **Security → SSL** → cài SSL miễn phí → bật **Force HTTPS**.  
-- Mở `https://<tên-miền>/` → trang chủ; `/index.php?view=catalog`; đăng nhập admin bằng SĐT/email trong `local.php` → **Bảng quản trị** → kiểm tra form **Tài khoản nhận tiền**.  
-- Thử mở `/config/local.php`, `/winsumwebfinal.sql`, `/sql/` → phải bị **403**.  
-- Nếu lỗi DB, trang báo "Hệ thống đang bảo trì"; chi tiết ghi ở hPanel → **Files → Error log** (hoặc đặt tạm `debug => true`).
 
 ---
 
