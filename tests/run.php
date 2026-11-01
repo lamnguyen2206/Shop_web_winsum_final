@@ -240,6 +240,31 @@ function testBankWebhookMarksPaid(mysqli $conn): void
     check($duplicate['status'] === 'duplicate', 'webhook is idempotent');
 }
 
+function testCustomerPasswordReset(mysqli $conn): void
+{
+    $phone = '0900000777';
+    $conn->query("DELETE FROM customers WHERE phone = '" . $conn->real_escape_string($phone) . "'");
+    $created = customerRegister($conn, 'Reset Buyer', $phone, 'reset-buyer@example.com', 'cu-mat-khau');
+    check($created['ok'] === true, 'reset fixture account is created');
+
+    $missing = customerResetPassword($conn, '0900000888');
+    check($missing['ok'] === false && $missing['password'] === '', 'unknown account is not reset');
+
+    $admin = $conn->query("SELECT phone FROM customers WHERE role = 'admin' LIMIT 1")->fetch_assoc();
+    $adminPhone = (string) ($admin['phone'] ?? '');
+    $adminBefore = $conn->query("SELECT password_hash FROM customers WHERE phone = '" . $conn->real_escape_string($adminPhone) . "'")->fetch_assoc();
+    $adminReset = customerResetPassword($conn, $adminPhone);
+    $adminAfter = $conn->query("SELECT password_hash FROM customers WHERE phone = '" . $conn->real_escape_string($adminPhone) . "'")->fetch_assoc();
+    check($adminReset['ok'] === false && ($adminBefore['password_hash'] ?? '') === ($adminAfter['password_hash'] ?? ''), 'admin password is not reset from the public form');
+
+    $reset = customerResetPassword($conn, $phone);
+    $row = $conn->query("SELECT password_hash FROM customers WHERE phone = '" . $conn->real_escape_string($phone) . "'")->fetch_assoc();
+    $login = customerLogin($conn, $phone, $reset['password']);
+    check($reset['ok'] === true && password_verify($reset['password'], (string) ($row['password_hash'] ?? '')) && $login['ok'] === true, 'customer can log in with the new password');
+    customerLogout();
+}
+
+testCustomerPasswordReset($conn);
 testOrderFlow($conn);
 testCouponExhausted($conn);
 testOrderOwnership($conn);

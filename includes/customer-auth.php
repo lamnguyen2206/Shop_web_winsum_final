@@ -184,6 +184,77 @@ function customerLoginRecordFailure(mysqli $conn, string $identifier): void
     }
 }
 
+function customerGenerateTemporaryPassword(): string
+{
+    $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    $max = strlen($alphabet) - 1;
+    $password = '';
+    for ($i = 0; $i < 10; $i++) {
+        $password .= $alphabet[random_int(0, $max)];
+    }
+
+    return $password;
+}
+
+/**
+ * Đặt mật khẩu mới cho khách và trả mật khẩu dạng đọc được để hiện một lần trên trang.
+ * Không đổi tài khoản quản trị.
+ *
+ * @return array{ok:bool,message:string,password:string}
+ */
+function customerResetPassword(mysqli $conn, string $identifier): array
+{
+    $identifier = trim($identifier);
+    if ($identifier === '') {
+        return ['ok' => false, 'message' => 'Vui lòng nhập số điện thoại hoặc email.', 'password' => ''];
+    }
+    if (customerLoginIsRateLimited($conn, $identifier)) {
+        return ['ok' => false, 'message' => customerLoginRateLimitMessage(), 'password' => ''];
+    }
+
+    $stmt = $conn->prepare('SELECT id, role, status FROM customers WHERE phone = ? OR email = ? LIMIT 1');
+    if (!$stmt) {
+        return ['ok' => false, 'message' => 'Không thể đặt lại mật khẩu lúc này.', 'password' => ''];
+    }
+    $stmt->bind_param('ss', $identifier, $identifier);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$row) {
+        customerLoginRecordFailure($conn, $identifier);
+        return ['ok' => false, 'message' => 'Không tìm thấy tài khoản với số điện thoại hoặc email này.', 'password' => ''];
+    }
+    if (($row['role'] ?? '') === 'admin') {
+        return ['ok' => false, 'message' => 'Không đặt lại mật khẩu quản trị bằng form này.', 'password' => ''];
+    }
+    if (($row['status'] ?? '') !== 'active') {
+        return ['ok' => false, 'message' => 'Tài khoản hiện không khả dụng.', 'password' => ''];
+    }
+
+    $plain = customerGenerateTemporaryPassword();
+    $hash = password_hash($plain, PASSWORD_DEFAULT);
+    $customerId = (int) $row['id'];
+    $update = $conn->prepare("UPDATE customers SET password_hash = ? WHERE id = ? AND role <> 'admin'");
+    if (!$update) {
+        return ['ok' => false, 'message' => 'Không thể đặt lại mật khẩu lúc này.', 'password' => ''];
+    }
+    $update->bind_param('si', $hash, $customerId);
+    $ok = $update->execute() && $update->affected_rows === 1;
+    $update->close();
+    if (!$ok) {
+        return ['ok' => false, 'message' => 'Không thể lưu mật khẩu mới.', 'password' => ''];
+    }
+
+    customerLoginRecordFailure($conn, $identifier);
+
+    return [
+        'ok' => true,
+        'message' => 'Đã đặt mật khẩu mới. Hãy chép mật khẩu bên dưới rồi đăng nhập.',
+        'password' => $plain,
+    ];
+}
+
 function customerLoginClearAttempts(mysqli $conn, string $identifier): void
 {
     $key = customerLoginIdentifier($identifier);

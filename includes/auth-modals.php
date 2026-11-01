@@ -27,6 +27,9 @@ if (!isset($authPrefill) || !is_array($authPrefill)) {
             <div class="auth-modal-panel" data-auth-panel="register" hidden>
                 <?php include __DIR__ . '/auth-register-form.php'; ?>
             </div>
+            <div class="auth-modal-panel" data-auth-panel="forgot" hidden>
+                <?php include __DIR__ . '/auth-forgot-form.php'; ?>
+            </div>
         </div>
     </div>
 </div>

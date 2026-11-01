@@ -59,7 +59,7 @@ function customerAuthHandlePost(mysqli $conn): void
         $_SESSION['auth_flash'] = [
             'message' => 'Phiên làm việc không hợp lệ. Vui lòng tải lại trang.',
             'success' => false,
-            'open' => in_array($action, ['login', 'register'], true) ? $action : null,
+            'open' => in_array($action, ['login', 'register', 'forgot'], true) ? $action : null,
             'prefill' => [],
         ];
         customerAuthRedirectAfterPost();
@@ -102,6 +102,21 @@ function customerAuthHandlePost(mysqli $conn): void
                 'phone' => (string) ($_POST['phone'] ?? ''),
                 'full_name' => (string) ($_POST['full_name'] ?? ''),
                 'email' => (string) ($_POST['email'] ?? ''),
+            ],
+        ];
+        customerAuthRedirectAfterPost();
+    }
+
+    if ($action === 'forgot') {
+        $identifier = (string) ($_POST['identifier'] ?? '');
+        $result = customerResetPassword($conn, $identifier);
+        $_SESSION['auth_flash'] = [
+            'message' => $result['message'],
+            'success' => $result['ok'],
+            'open' => 'forgot',
+            'prefill' => [
+                'identifier' => $identifier,
+                'new_password' => $result['password'],
             ],
         ];
         customerAuthRedirectAfterPost();

@@ -28,5 +28,8 @@ $loginIdentifier = htmlspecialchars($authPrefill['identifier'] ?? '');
         </div>
         <button type="submit" class="auth-submit">Đăng nhập</button>
     </form>
+    <p class="auth-footer">
+        <button type="button" class="auth-inline-link" data-auth-switch="forgot">Quên mật khẩu</button>
+    </p>
     <p class="auth-footer">Chưa có tài khoản? <button type="button" class="auth-inline-link" data-auth-switch="register">Đăng ký</button></p>
 </div>
