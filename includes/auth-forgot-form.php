@@ -11,6 +11,7 @@ require_once __DIR__ . '/csrf.php';
 
 $forgotIdentifier = htmlspecialchars($authPrefill['identifier'] ?? '', ENT_QUOTES, 'UTF-8');
 $newPassword = (string) ($authPrefill['new_password'] ?? '');
+$returnView = (isset($view) && is_string($view) && $view !== '') ? $view : 'home';
 ?>
 
 <div class="auth-modal-card auth-card">
@@ -32,6 +33,6 @@ $newPassword = (string) ($authPrefill['new_password'] ?? '');
         <button type="submit" class="auth-submit">Đặt mật khẩu mới</button>
     </form>
     <p class="auth-footer">
-        <button type="button" class="auth-inline-link" data-auth-switch="login">Quay lại đăng nhập</button>
+        <a class="auth-inline-link" href="<?php echo e(auth_login_url($returnView)); ?>" data-auth-switch="login">Quay lại đăng nhập</a>
     </p>
 </div>

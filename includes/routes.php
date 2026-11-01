@@ -109,8 +109,14 @@ function appResolveView(string $requested): array
  */
 function appAssetsForView(string $view, bool $storefrontGuest): array
 {
+    $authJs = __DIR__ . '/../assets/js/auth-forms.js';
+    $authCss = __DIR__ . '/../assets/css/auth-forms.css';
     $styles = ['assets/css/site-search.css', 'assets/css/auth-toast.css'];
-    $scripts = ['assets/js/auth-forms.js', 'assets/js/site-search.js', 'assets/js/auth-toast.js'];
+    $scripts = [
+        'assets/js/auth-forms.js?v=' . (int) @filemtime($authJs),
+        'assets/js/site-search.js',
+        'assets/js/auth-toast.js',
+    ];
 
     if ($view === 'product') {
         $styles[] = 'assets/css/product-detail.css';
@@ -127,7 +133,7 @@ function appAssetsForView(string $view, bool $storefrontGuest): array
         $scripts[] = 'assets/js/home.js';
     }
     if ($storefrontGuest) {
-        $styles[] = 'assets/css/auth-forms.css';
+        $styles[] = 'assets/css/auth-forms.css?v=' . (int) @filemtime($authCss);
     }
     if (str_starts_with($view, 'admin') || $view === 'blog-editor') {
         $styles[] = 'assets/css/admin.css';

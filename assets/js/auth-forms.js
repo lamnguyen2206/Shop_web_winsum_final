@@ -94,7 +94,8 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
         document.querySelectorAll('[data-auth-switch]').forEach(function (btn) {
-            btn.addEventListener('click', function () {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
                 showAuthPanel(btn.getAttribute('data-auth-switch'));
             });
         });

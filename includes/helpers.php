@@ -33,6 +33,13 @@ function auth_register_url(string $returnView = 'home', array $params = []): str
     return app_url($returnView, $params);
 }
 
+/** URL mở form quên mật khẩu (modal) trên trang đích sau khi tải. */
+function auth_forgot_url(string $returnView = 'home', array $params = []): string
+{
+    $params['auth'] = 'forgot';
+    return app_url($returnView, $params);
+}
+
 /** Chuẩn hóa SĐT để so khớp đơn hàng / mã giảm giá. */
 function phoneNormalize(string $phone): string
 {
