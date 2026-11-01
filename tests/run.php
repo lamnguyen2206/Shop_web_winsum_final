@@ -16,8 +16,16 @@ $testDb = 'winsumwebfinal_test';
 putenv('WINSUM_DB_NAME=' . $testDb);
 
 $config = require $root . '/config/local.example.php';
-if (is_file($root . '/config/local.php')) {
-    $config = require $root . '/config/local.php';
+if (is_file($root . '/config/local.dev.php')) {
+    $config = require $root . '/config/local.dev.php';
+} elseif (is_file($root . '/config/local.php')) {
+    $localConfig = require $root . '/config/local.php';
+    $localUser = (string) ($localConfig['db']['user'] ?? '');
+    $localName = (string) ($localConfig['db']['name'] ?? '');
+    $isHosting = preg_match('/^u\d+_/', $localUser) === 1 || preg_match('/^u\d+_/', $localName) === 1;
+    if (is_array($localConfig) && !$isHosting) {
+        $config = $localConfig;
+    }
 }
 $db = $config['db'];
 $server = new mysqli((string) $db['host'], (string) $db['user'], (string) $db['pass']);

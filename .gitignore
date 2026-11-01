@@ -1,3 +1,4 @@
 config/local.php
+config/local.dev.php
 storage/mail/*
 !storage/mail/.gitkeep

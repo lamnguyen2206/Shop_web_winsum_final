@@ -3,11 +3,10 @@
 declare(strict_types=1);
 
 /**
- * Copy this file to config/local.php and adjust for the machine.
- * config/local.php is not committed.
- *
- * Hostinger (hPanel → Databases → MySQL Databases): host thường là
- * "localhost", tên DB và user có tiền tố, ví dụ u123456789_winsum.
+ * Máy XAMPP: copy thành config/local.dev.php nếu root có mật khẩu.
+ * Hostinger: copy thành config/local.php. File local.php chứa user dạng
+ * u123456789_... sẽ không được dùng khi mở http://localhost.
+ * Cả hai file đều không commit.
  */
 return [
     'app' => [
