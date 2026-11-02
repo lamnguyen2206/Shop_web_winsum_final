@@ -28,7 +28,7 @@ $returnView = (isset($view) && is_string($view) && $view !== '') ? $view : 'home
             </button>
         </div>
         <p class="auth-forgot-row">
-            <a class="auth-inline-link" href="<?php echo e(auth_forgot_url($returnView)); ?>" data-auth-switch="forgot">Quên mật khẩu?</a>
+            <a class="auth-inline-link" href="<?php echo e(auth_forgot_url($returnView)); ?>" data-auth-switch="forgot" data-toast="Nhập số điện thoại hoặc email đã đăng ký. Mật khẩu tạm thời được gửi tới email của tài khoản." data-toast-type="info">Quên mật khẩu?</a>
         </p>
         <button type="submit" class="auth-submit">Đăng nhập</button>
     </form>

@@ -145,7 +145,7 @@ $couponSuggestions = $cartItems !== [] && !$cartBlockedAdmin
                     </div>
                 </form>
                 <?php if (!empty($couponSuggestions)): ?>
-                    <button type="button" class="coupon-form__picker" data-coupon-modal-open aria-haspopup="dialog">
+                    <button type="button" class="coupon-form__picker" data-coupon-modal-open aria-haspopup="dialog" data-toast="Hệ thống tự chọn mã tiết kiệm nhất khi vào giỏ hàng, nếu bạn chưa áp mã." data-toast-type="info">
                         Chọn mã giảm giá
                     </button>
                 <?php endif; ?>

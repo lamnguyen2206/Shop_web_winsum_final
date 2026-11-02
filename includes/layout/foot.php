@@ -4,9 +4,19 @@
 
     <?php include __DIR__ . '/../footer.php'; ?>
 
-    <?php if ($authMessage !== ''): ?>
-        <?php include __DIR__ . '/../auth-toast.php'; ?>
-    <?php endif; ?>
+    <?php
+    $toastText = isset($authMessage) ? (string) $authMessage : '';
+    $toastSuccess = !empty($authSuccess);
+    if ($toastText === '' && isset($accountMessage) && (string) $accountMessage !== '') {
+        $toastText = (string) $accountMessage;
+        $toastSuccess = !empty($accountSuccess);
+    }
+    if ($toastText !== '') {
+        $authMessage = $toastText;
+        $authSuccess = $toastSuccess;
+        include __DIR__ . '/../auth-toast.php';
+    }
+    ?>
 
     <script src="assets/js/main.js"></script>
     <?php foreach ($extraScripts as $scriptSrc): ?>

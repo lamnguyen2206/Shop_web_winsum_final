@@ -34,7 +34,6 @@ $regEmail = htmlspecialchars($authPrefill['email'] ?? '');
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
         </div>
-        <p class="auth-hint">Mật khẩu bao gồm ít nhất 6 ký tự</p>
         <button type="submit" class="auth-submit">Đăng ký</button>
     </form>
     <p class="auth-footer">Đã có tài khoản? <button type="button" class="auth-inline-link" data-auth-switch="login">Đăng nhập</button></p>

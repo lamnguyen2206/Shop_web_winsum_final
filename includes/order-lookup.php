@@ -44,7 +44,6 @@ if ($lookupCode !== '' || $lookupPhone !== '') {
     <form method="get" action="index.php" class="account-form order-lookup-form">
         <input type="hidden" name="view" value="order-lookup">
         <h2>Nhập thông tin đơn hàng</h2>
-        <p class="account-form-hint">Dành cho khách vãng lai chưa đăng nhập. Mã đơn có dạng WS...</p>
 
         <label for="lookup_code">Mã đơn hàng</label>
         <input id="lookup_code" type="text" name="code" required value="<?php echo e($lookupCode); ?>" placeholder="VD: WS05261234">
@@ -52,7 +51,7 @@ if ($lookupCode !== '' || $lookupPhone !== '') {
         <label for="lookup_phone">Số điện thoại đặt hàng</label>
         <input id="lookup_phone" type="tel" name="phone" required inputmode="numeric" pattern="0[0-9]{9}" maxlength="10" title="Số điện thoại phải có đúng 10 số và bắt đầu bằng số 0" value="<?php echo e($lookupPhone); ?>" placeholder="VD: 0901234567">
 
-        <button type="submit">Tra cứu đơn</button>
+        <button type="submit" data-toast="Dành cho khách chưa đăng nhập. Mã đơn có dạng WS và số điện thoại dùng khi đặt hàng." data-toast-type="info">Tra cứu đơn</button>
     </form>
 
     <?php if ($lookupOrder): ?>

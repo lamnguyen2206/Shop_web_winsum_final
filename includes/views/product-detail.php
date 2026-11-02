@@ -142,7 +142,19 @@ $inventoryQty = inventoryGetAvailableQty($conn, (int) $product['id']);
         <div class="product-tabs-nav" role="tablist">
             <button type="button" class="is-active" data-tab="desc" role="tab">Mô tả</button>
             <button type="button" data-tab="specs" role="tab">Thông số</button>
-            <button type="button" data-tab="reviews" role="tab">Đánh giá (<?php echo count($reviews); ?>)</button>
+            <?php
+            $reviewGuide = '';
+            if (!$productAdminView && !$canReviewProduct) {
+                if ($hasReviewedProduct) {
+                    $reviewGuide = 'Bạn đã đánh giá sản phẩm này rồi.';
+                } elseif ($currentCustomer) {
+                    $reviewGuide = 'Bạn chỉ được đánh giá sản phẩm trong đơn hàng đã giao thành công.';
+                } else {
+                    $reviewGuide = 'Vui lòng đăng nhập và mua sản phẩm này trước khi đánh giá.';
+                }
+            }
+            ?>
+            <button type="button" data-tab="reviews" role="tab"<?php echo $reviewGuide !== '' ? ' data-toast="' . e($reviewGuide) . '" data-toast-type="info"' : ''; ?>>Đánh giá (<?php echo count($reviews); ?>)</button>
         </div>
 
         <div class="product-tabs-panels">
@@ -241,22 +253,8 @@ $inventoryQty = inventoryGetAvailableQty($conn, (int) $product['id']);
                             <label>Nội dung đánh giá
                                 <textarea name="review_content" rows="4" required placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm..."></textarea>
                             </label>
-                            <button type="submit">Gửi đánh giá</button>
-                            <p class="form-hint">Đánh giá sẽ hiển thị ngay trên trang sản phẩm.</p>
+                            <button type="submit" data-toast="Đánh giá sẽ hiển thị ngay trên trang sản phẩm." data-toast-type="info">Gửi đánh giá</button>
                         </form>
-                    </div>
-                <?php elseif (!$productAdminView): ?>
-                    <div class="review-form-wrap">
-                        <h3>Gửi đánh giá của bạn</h3>
-                        <p class="form-hint">
-                            <?php if ($hasReviewedProduct): ?>
-                                Bạn đã đánh giá sản phẩm này rồi.
-                            <?php elseif ($currentCustomer): ?>
-                                Bạn chỉ được đánh giá sản phẩm trong đơn hàng đã giao thành công.
-                            <?php else: ?>
-                                Vui lòng đăng nhập và mua sản phẩm này trước khi đánh giá.
-                            <?php endif; ?>
-                        </p>
                     </div>
                 <?php endif; ?>
             </article>

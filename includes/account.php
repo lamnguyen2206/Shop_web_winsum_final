@@ -9,12 +9,6 @@ $currentCustomer = customerCurrent($conn);
     <p class="breadcrumb"><a href="<?php echo e(app_url('home')); ?>">Trang chủ</a> / <span>Tài khoản</span></p>
     <h1>Tài khoản khách hàng</h1>
 
-    <?php if ($accountMessage !== ''): ?>
-        <p class="account-notice <?php echo $accountSuccess ? 'account-notice--ok' : 'account-notice--err'; ?>">
-            <?php echo htmlspecialchars($accountMessage); ?>
-        </p>
-    <?php endif; ?>
-
     <?php if ($currentCustomer): ?>
         <?php
         $profileNeedsEmail = trim((string) ($currentCustomer['email'] ?? '')) === '';
@@ -34,13 +28,6 @@ $currentCustomer = customerCurrent($conn);
                 <?php echo csrfField(); ?>
                 <input type="hidden" name="action" value="update_profile">
                 <h2>Sửa thông tin</h2>
-                <?php if ($profileMustChangePassword): ?>
-                    <p class="account-form-hint">Bạn đang dùng mật khẩu tạm thời từ email. Hãy đặt mật khẩu mới rồi lưu. Các trang khác sẽ mở sau khi đổi xong.</p>
-                <?php elseif ($profileNeedsEmail): ?>
-                    <p class="account-form-hint">Tài khoản này chưa có email. Hãy nhập email trước khi lưu. Email dùng để nhận mật khẩu khi quên.</p>
-                <?php else: ?>
-                    <p class="account-form-hint">Cập nhật tên, số điện thoại, email. Để trống mật khẩu mới nếu không đổi.</p>
-                <?php endif; ?>
 
                 <label for="profile_full_name">Tên đăng nhập / Họ tên</label>
                 <input id="profile_full_name" type="text" name="full_name" required value="<?php echo htmlspecialchars($currentCustomer['full_name']); ?>" autocomplete="name">
@@ -54,13 +41,12 @@ $currentCustomer = customerCurrent($conn);
                 <label for="profile_new_password">Mật khẩu mới<?php echo $profileMustChangePassword ? ' (bắt buộc)' : ' (tuỳ chọn)'; ?></label>
                 <input id="profile_new_password" type="password" name="new_password" minlength="6" autocomplete="new-password" placeholder="<?php echo $profileMustChangePassword ? 'Khác mật khẩu tạm thời, ít nhất 6 ký tự' : 'Ít nhất 6 ký tự'; ?>"<?php echo $profileMustChangePassword ? ' required' : ''; ?>>
 
-                <button type="submit">Lưu thay đổi</button>
+                <button type="submit"<?php if ($profileMustChangePassword): ?> data-toast="Mật khẩu tạm thời chỉ dùng để đăng nhập. Hãy đặt mật khẩu mới rồi lưu." data-toast-type="info"<?php elseif ($profileNeedsEmail): ?> data-toast="Tài khoản chưa có email. Hãy nhập email để nhận mật khẩu khi quên." data-toast-type="info"<?php endif; ?>>Lưu thay đổi</button>
             </form>
         </div>
     <?php else: ?>
         <div class="empty-state account-guest">
             <p>Bạn chưa đăng nhập.</p>
-            <p class="account-form-hint">Đăng nhập để xem và sửa thông tin tài khoản, theo dõi đơn hàng.</p>
             <div class="account-actions">
                 <a class="btn-secondary" href="<?php echo e(auth_login_url('account')); ?>">Đăng nhập</a>
                 <a class="btn-secondary" href="<?php echo e(auth_register_url('account')); ?>">Đăng ký</a>

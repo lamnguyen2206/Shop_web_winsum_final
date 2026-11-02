@@ -109,8 +109,7 @@ $commentCount = blogCommentCountApprovedByPost($conn, (int) $currentPost['id']);
                 <label>Nội dung
                     <textarea name="comment_content" rows="4" required maxlength="2000" placeholder="Chia sẻ suy nghĩ của bạn về bài viết..."></textarea>
                 </label>
-                <button type="submit">Gửi bình luận</button>
-                <p class="form-hint">Bình luận sẽ hiển thị ngay sau khi gửi.</p>
+                <button type="submit" data-toast="Bình luận sẽ hiển thị ngay sau khi gửi." data-toast-type="info">Gửi bình luận</button>
             </form>
         </div>
     </section>

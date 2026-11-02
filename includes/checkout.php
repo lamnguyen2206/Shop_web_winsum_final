@@ -161,11 +161,10 @@ $checkoutCanSubmit = !$checkoutBlockedAdmin
             <?php if ($currentCustomer): ?>
                 <a class="btn-secondary" href="<?php echo e(app_url('orders')); ?>">Xem đơn hàng của tôi</a>
             <?php else: ?>
-                <p class="checkout-guest-register-hint">Đăng ký để gắn các đơn trước đó (cùng SĐT) vào tài khoản.</p>
                 <?php if ($orderCode !== '' && $registerPhone !== ''): ?>
                     <a class="btn-secondary" href="<?php echo e(app_url('order-lookup', ['code' => $orderCode, 'phone' => $registerPhone])); ?>">Tra cứu đơn vừa đặt</a>
                 <?php endif; ?>
-                <a class="btn-secondary" href="<?php echo e(auth_register_url('account', $registerParams)); ?>">Đăng ký tài khoản</a>
+                <a class="btn-secondary" href="<?php echo e(auth_register_url('account', $registerParams)); ?>" data-toast="Đăng ký để gắn các đơn trước đó (cùng số điện thoại) vào tài khoản." data-toast-type="info">Đăng ký tài khoản</a>
                 <a class="read-more" href="<?php echo e(auth_login_url('orders')); ?>">Đã có tài khoản? Đăng nhập</a>
             <?php endif; ?>
             <a class="read-more" href="<?php echo e(app_url('catalog')); ?>">Tiếp tục mua sắm</a>

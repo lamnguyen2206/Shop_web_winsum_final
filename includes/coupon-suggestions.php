@@ -121,10 +121,6 @@ $catalogUrl = app_url('catalog');
 
         <div class="coupon-modal__body" data-coupon-panel>
 
-            <p class="coupon-suggestions__hint">Hệ thống tự chọn mã tiết kiệm nhất khi vào giỏ hàng (nếu chưa áp mã).</p>
-
-
-
             <div class="coupon-tabs" role="tablist" aria-label="Lọc voucher">
 
                 <button type="button" class="coupon-tabs__btn is-active" role="tab" aria-selected="true" data-coupon-tab="all">Tất cả</button>

@@ -43,6 +43,12 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.auth-toast--info {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  color: #f9fafb;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
 .auth-toast-icon {
   flex-shrink: 0;
   width: 22px;

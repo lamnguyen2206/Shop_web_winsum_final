@@ -111,11 +111,13 @@ function appAssetsForView(string $view, bool $storefrontGuest): array
 {
     $authJs = __DIR__ . '/../assets/js/auth-forms.js';
     $authCss = __DIR__ . '/../assets/css/auth-forms.css';
-    $styles = ['assets/css/site-search.css', 'assets/css/auth-toast.css'];
+    $toastCss = __DIR__ . '/../assets/css/auth-toast.css';
+    $toastJs = __DIR__ . '/../assets/js/auth-toast.js';
+    $styles = ['assets/css/site-search.css', 'assets/css/auth-toast.css?v=' . (int) @filemtime($toastCss)];
     $scripts = [
         'assets/js/auth-forms.js?v=' . (int) @filemtime($authJs),
         'assets/js/site-search.js',
-        'assets/js/auth-toast.js',
+        'assets/js/auth-toast.js?v=' . (int) @filemtime($toastJs),
     ];
 
     if ($view === 'product') {
