@@ -465,6 +465,19 @@ function customerUpdateProfile(
         return ['ok' => false, 'message' => 'Mật khẩu mới phải có ít nhất 6 ký tự.'];
     }
 
+    $current = customerGetById($conn, $customerId);
+    if ($current === null || ($current['status'] ?? '') !== 'active') {
+        return ['ok' => false, 'message' => 'Tài khoản hiện không khả dụng.'];
+    }
+    $storedEmail = trim((string) ($current['email'] ?? ''));
+    $missingEmail = $storedEmail === '' || filter_var($storedEmail, FILTER_VALIDATE_EMAIL) === false;
+    if ($missingEmail && ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false)) {
+        return ['ok' => false, 'message' => 'Tài khoản chưa có email. Vui lòng nhập email trong thông tin cá nhân để nhận mật khẩu khi quên.'];
+    }
+    if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+        return ['ok' => false, 'message' => 'Email không hợp lệ.'];
+    }
+
     $emailParam = $email !== '' ? $email : null;
 
     $stmtPhone = $conn->prepare('SELECT id FROM customers WHERE id <> ? AND phone = ? LIMIT 1');

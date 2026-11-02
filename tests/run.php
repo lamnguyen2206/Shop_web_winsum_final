@@ -248,6 +248,27 @@ function testBankWebhookMarksPaid(mysqli $conn): void
     check($duplicate['status'] === 'duplicate', 'webhook is idempotent');
 }
 
+function testProfileRequiresEmailWhenMissing(mysqli $conn): void
+{
+    $phone = '0900000776';
+    $conn->query("DELETE FROM customers WHERE phone = '" . $conn->real_escape_string($phone) . "'");
+    $created = customerRegister($conn, 'Need Email', $phone, '', 'cu-mat-khau');
+    $customerId = (int) ($created['customer_id'] ?? 0);
+    $blocked = customerUpdateProfile($conn, $customerId, 'Need Email', $phone, '', '');
+    $stillEmpty = $conn->query("SELECT email FROM customers WHERE id = " . $customerId)->fetch_assoc();
+    $saved = customerUpdateProfile($conn, $customerId, 'Need Email', $phone, 'need-email@example.com', '');
+    $row = $conn->query("SELECT email FROM customers WHERE id = " . $customerId)->fetch_assoc();
+    check(
+        $created['ok'] === true
+        && $blocked['ok'] === false
+        && trim((string) ($stillEmpty['email'] ?? '')) === ''
+        && $saved['ok'] === true
+        && (string) ($row['email'] ?? '') === 'need-email@example.com',
+        'account without email must save an email in the profile'
+    );
+    customerLogout();
+}
+
 function testCustomerPasswordReset(mysqli $conn): void
 {
     $phone = '0900000777';
@@ -302,6 +323,7 @@ function testCustomerPasswordReset(mysqli $conn): void
 }
 
 testCustomerPasswordReset($conn);
+testProfileRequiresEmailWhenMissing($conn);
 testOrderFlow($conn);
 testCouponExhausted($conn);
 testOrderOwnership($conn);

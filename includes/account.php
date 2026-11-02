@@ -16,6 +16,7 @@ $currentCustomer = customerCurrent($conn);
     <?php endif; ?>
 
     <?php if ($currentCustomer): ?>
+        <?php $profileNeedsEmail = trim((string) ($currentCustomer['email'] ?? '')) === ''; ?>
         <div class="account-layout account-layout--single">
             <div class="account-card account-card--summary">
                 <h2>Xin chào, <?php echo htmlspecialchars($currentCustomer['full_name']); ?></h2>
@@ -30,7 +31,11 @@ $currentCustomer = customerCurrent($conn);
                 <?php echo csrfField(); ?>
                 <input type="hidden" name="action" value="update_profile">
                 <h2>Sửa thông tin</h2>
-                <p class="account-form-hint">Cập nhật tên, số điện thoại, email. Để trống mật khẩu mới nếu không đổi.</p>
+                <?php if ($profileNeedsEmail): ?>
+                    <p class="account-form-hint">Tài khoản này chưa có email. Hãy nhập email trước khi lưu. Email dùng để nhận mật khẩu khi quên.</p>
+                <?php else: ?>
+                    <p class="account-form-hint">Cập nhật tên, số điện thoại, email. Để trống mật khẩu mới nếu không đổi.</p>
+                <?php endif; ?>
 
                 <label for="profile_full_name">Tên đăng nhập / Họ tên</label>
                 <input id="profile_full_name" type="text" name="full_name" required value="<?php echo htmlspecialchars($currentCustomer['full_name']); ?>" autocomplete="name">
@@ -38,8 +43,8 @@ $currentCustomer = customerCurrent($conn);
                 <label for="profile_phone">Số điện thoại</label>
                 <input id="profile_phone" type="tel" name="phone" required inputmode="numeric" pattern="0[0-9]{9}" maxlength="10" title="Số điện thoại phải có đúng 10 số và bắt đầu bằng số 0" value="<?php echo htmlspecialchars($currentCustomer['phone']); ?>" autocomplete="tel">
 
-                <label for="profile_email">Email</label>
-                <input id="profile_email" type="email" name="email" value="<?php echo htmlspecialchars((string) ($currentCustomer['email'] ?? '')); ?>" autocomplete="email">
+                <label for="profile_email">Email<?php echo $profileNeedsEmail ? ' (bắt buộc)' : ''; ?></label>
+                <input id="profile_email" type="email" name="email" value="<?php echo htmlspecialchars((string) ($currentCustomer['email'] ?? '')); ?>" autocomplete="email"<?php echo $profileNeedsEmail ? ' required' : ''; ?>>
 
                 <label for="profile_new_password">Mật khẩu mới (tuỳ chọn)</label>
                 <input id="profile_new_password" type="password" name="new_password" minlength="6" autocomplete="new-password" placeholder="Ít nhất 6 ký tự">
