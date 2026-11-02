@@ -296,7 +296,7 @@ function testCustomerPasswordReset(mysqli $conn): void
     customerLogout();
 
     $reset = customerResetPassword($conn, $phone);
-    $row = $conn->query("SELECT password_hash FROM customers WHERE phone = '" . $conn->real_escape_string($phone) . "'")->fetch_assoc();
+    $row = $conn->query("SELECT id, password_hash, must_change_password FROM customers WHERE phone = '" . $conn->real_escape_string($phone) . "'")->fetch_assoc();
     $mailedPassword = '';
     $mailFiles = glob(dirname(__DIR__) . '/storage/mail/*.txt') ?: [];
     usort($mailFiles, static fn (string $a, string $b): int => filemtime($b) <=> filemtime($a));
@@ -305,19 +305,31 @@ function testCustomerPasswordReset(mysqli $conn): void
         if (!str_contains($contents, 'reset-buyer@example.com')) {
             continue;
         }
-        if (preg_match('/Mật khẩu mới: (\S+)/u', $contents, $matches) === 1) {
+        if (preg_match('/Mật khẩu tạm thời: (\S+)/u', $contents, $matches) === 1) {
             $mailedPassword = $matches[1];
         }
         break;
     }
     $login = $mailedPassword !== '' ? customerLogin($conn, $phone, $mailedPassword) : ['ok' => false];
+    $customerId = (int) ($row['id'] ?? 0);
+    $keptTemp = customerUpdateProfile($conn, $customerId, 'Reset Buyer', $phone, 'reset-buyer@example.com', '');
+    $sameTemp = customerUpdateProfile($conn, $customerId, 'Reset Buyer', $phone, 'reset-buyer@example.com', $mailedPassword);
+    $changed = customerUpdateProfile($conn, $customerId, 'Reset Buyer', $phone, 'reset-buyer@example.com', 'mat-khau-moi-2');
+    $after = $conn->query("SELECT password_hash, must_change_password FROM customers WHERE id = " . $customerId)->fetch_assoc();
     check(
         $reset['ok'] === true
         && $reset['password'] === ''
         && $mailedPassword !== ''
+        && (int) ($row['must_change_password'] ?? 0) === 1
         && password_verify($mailedPassword, (string) ($row['password_hash'] ?? ''))
-        && $login['ok'] === true,
-        'customer can log in with the password sent by email'
+        && $login['ok'] === true
+        && !empty($login['must_change_password'])
+        && $keptTemp['ok'] === false
+        && $sameTemp['ok'] === false
+        && $changed['ok'] === true
+        && (int) ($after['must_change_password'] ?? 1) === 0
+        && password_verify('mat-khau-moi-2', (string) ($after['password_hash'] ?? '')),
+        'customer must replace the temporary password after login'
     );
     customerLogout();
 }

@@ -67,6 +67,12 @@ function customerAuthHandlePost(mysqli $conn): void
 
     if ($action === 'login') {
         $result = customerLogin($conn, (string) ($_POST['identifier'] ?? ''), (string) ($_POST['password'] ?? ''));
+        if ($result['ok'] && !empty($result['must_change_password'])) {
+            require_once __DIR__ . '/flash.php';
+            pageFlashSet('account', 'Mật khẩu tạm thời chỉ dùng để đăng nhập. Hãy đặt mật khẩu mới trước khi tiếp tục.', false);
+            header('Location: index.php?view=account#profile-edit', true, 303);
+            exit;
+        }
         if ($result['ok'] && !empty($result['is_admin'])) {
             $_SESSION['auth_flash'] = [
                 'message' => 'Đăng nhập thành công! Chào mừng admin quay trở lại.',

@@ -50,9 +50,9 @@ function mailSendPasswordReset(string $to, string $name, string $password): bool
 {
     $name = trim($name) !== '' ? trim($name) : 'bạn';
     $body = "Xin chào {$name},\n\n"
-        . "Winsum Home đã đặt lại mật khẩu cho tài khoản của bạn.\n"
-        . "Mật khẩu mới: {$password}\n\n"
-        . "Hãy đăng nhập rồi đổi mật khẩu trong mục Tài khoản.\n"
+        . "Winsum Home đã tạo mật khẩu tạm thời cho tài khoản của bạn.\n"
+        . "Mật khẩu tạm thời: {$password}\n\n"
+        . "Hãy đăng nhập bằng mật khẩu này, rồi đặt mật khẩu mới trong mục Tài khoản trước khi tiếp tục mua hàng.\n"
         . "Nếu bạn không yêu cầu đặt lại mật khẩu, hãy liên hệ cửa hàng.\n";
 
     return mailSend($to, 'Mat khau moi Winsum Home', $body);

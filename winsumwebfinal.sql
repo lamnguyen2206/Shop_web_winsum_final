@@ -230,6 +230,7 @@ CREATE TABLE `customers` (
   `password_hash` varchar(255) DEFAULT NULL,
   `status` enum('active','inactive','blocked') NOT NULL DEFAULT 'active',
   `role` enum('customer','admin') NOT NULL DEFAULT 'customer',
+  `must_change_password` tinyint(1) NOT NULL DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -1091,7 +1092,8 @@ CREATE TABLE IF NOT EXISTS `schema_migrations` (
 INSERT IGNORE INTO `schema_migrations` (`id`) VALUES
 ('001_fix_order_cart_return'),
 ('002_shop_payment_account'),
-('003_payment_webhook');
+('003_payment_webhook'),
+('004_must_change_password');
 
 CREATE TABLE IF NOT EXISTS `carts` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,

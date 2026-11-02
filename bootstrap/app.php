@@ -52,6 +52,13 @@ $resolved = appResolveView($requestedView);
 $view = $resolved['view'];
 
 customerAuthHandlePost($conn);
+
+$gatedCustomer = customerCurrent($conn);
+if (customerMustChangePassword($gatedCustomer) && $view !== 'account') {
+    pageFlashSet('account', 'Mật khẩu tạm thời chỉ dùng để đăng nhập. Hãy đặt mật khẩu mới trước khi tiếp tục.', false);
+    redirect(app_url('account') . '#profile-edit');
+}
+
 adminHandlePost($conn, $view);
 storefrontHandlePost($conn, $view);
 blogEditorHandlePost($conn, $view);

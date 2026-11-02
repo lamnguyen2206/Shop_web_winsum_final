@@ -16,7 +16,10 @@ $currentCustomer = customerCurrent($conn);
     <?php endif; ?>
 
     <?php if ($currentCustomer): ?>
-        <?php $profileNeedsEmail = trim((string) ($currentCustomer['email'] ?? '')) === ''; ?>
+        <?php
+        $profileNeedsEmail = trim((string) ($currentCustomer['email'] ?? '')) === '';
+        $profileMustChangePassword = customerMustChangePassword($currentCustomer);
+        ?>
         <div class="account-layout account-layout--single">
             <div class="account-card account-card--summary">
                 <h2>Xin chào, <?php echo htmlspecialchars($currentCustomer['full_name']); ?></h2>
@@ -31,7 +34,9 @@ $currentCustomer = customerCurrent($conn);
                 <?php echo csrfField(); ?>
                 <input type="hidden" name="action" value="update_profile">
                 <h2>Sửa thông tin</h2>
-                <?php if ($profileNeedsEmail): ?>
+                <?php if ($profileMustChangePassword): ?>
+                    <p class="account-form-hint">Bạn đang dùng mật khẩu tạm thời từ email. Hãy đặt mật khẩu mới rồi lưu. Các trang khác sẽ mở sau khi đổi xong.</p>
+                <?php elseif ($profileNeedsEmail): ?>
                     <p class="account-form-hint">Tài khoản này chưa có email. Hãy nhập email trước khi lưu. Email dùng để nhận mật khẩu khi quên.</p>
                 <?php else: ?>
                     <p class="account-form-hint">Cập nhật tên, số điện thoại, email. Để trống mật khẩu mới nếu không đổi.</p>
@@ -46,8 +51,8 @@ $currentCustomer = customerCurrent($conn);
                 <label for="profile_email">Email<?php echo $profileNeedsEmail ? ' (bắt buộc)' : ''; ?></label>
                 <input id="profile_email" type="email" name="email" value="<?php echo htmlspecialchars((string) ($currentCustomer['email'] ?? '')); ?>" autocomplete="email"<?php echo $profileNeedsEmail ? ' required' : ''; ?>>
 
-                <label for="profile_new_password">Mật khẩu mới (tuỳ chọn)</label>
-                <input id="profile_new_password" type="password" name="new_password" minlength="6" autocomplete="new-password" placeholder="Ít nhất 6 ký tự">
+                <label for="profile_new_password">Mật khẩu mới<?php echo $profileMustChangePassword ? ' (bắt buộc)' : ' (tuỳ chọn)'; ?></label>
+                <input id="profile_new_password" type="password" name="new_password" minlength="6" autocomplete="new-password" placeholder="<?php echo $profileMustChangePassword ? 'Khác mật khẩu tạm thời, ít nhất 6 ký tự' : 'Ít nhất 6 ký tự'; ?>"<?php echo $profileMustChangePassword ? ' required' : ''; ?>>
 
                 <button type="submit">Lưu thay đổi</button>
             </form>

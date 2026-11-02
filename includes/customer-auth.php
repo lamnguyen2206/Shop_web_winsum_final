@@ -64,9 +64,29 @@ function customerBootstrapAdminAccount(mysqli $conn): void
     $insert->close();
 }
 
+function customerEnsureMustChangePasswordColumn(mysqli $conn): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    $col = $conn->query("SHOW COLUMNS FROM customers LIKE 'must_change_password'");
+    if ($col && $col->num_rows > 0) {
+        return;
+    }
+    $conn->query('ALTER TABLE customers ADD COLUMN must_change_password TINYINT(1) NOT NULL DEFAULT 0');
+}
+
+function customerMustChangePassword(?array $customer): bool
+{
+    return $customer !== null && (int) ($customer['must_change_password'] ?? 0) === 1;
+}
+
 function customerGetById(mysqli $conn, int $customerId): ?array
 {
-    $stmt = $conn->prepare("SELECT id, customer_code, full_name, phone, email, status, role
+    customerEnsureMustChangePasswordColumn($conn);
+    $stmt = $conn->prepare("SELECT id, customer_code, full_name, phone, email, status, role, must_change_password
                             FROM customers
                             WHERE id = ?
                             LIMIT 1");
@@ -248,11 +268,12 @@ function customerResetPassword(mysqli $conn, string $identifier): array
         return ['ok' => false, 'message' => 'Tài khoản này chưa có email. Không thể gửi mật khẩu mới.', 'password' => ''];
     }
 
+    customerEnsureMustChangePasswordColumn($conn);
     $plain = customerGenerateTemporaryPassword();
     $hash = password_hash($plain, PASSWORD_DEFAULT);
     $oldHash = (string) $row['password_hash'];
     $customerId = (int) $row['id'];
-    $update = $conn->prepare("UPDATE customers SET password_hash = ? WHERE id = ? AND role <> 'admin'");
+    $update = $conn->prepare("UPDATE customers SET password_hash = ?, must_change_password = 1 WHERE id = ? AND role <> 'admin'");
     if (!$update) {
         return ['ok' => false, 'message' => 'Không thể đặt lại mật khẩu lúc này.', 'password' => ''];
     }
@@ -266,7 +287,7 @@ function customerResetPassword(mysqli $conn, string $identifier): array
     require_once __DIR__ . '/mailer.php';
     $sent = mailSendPasswordReset($email, (string) ($row['full_name'] ?? ''), $plain);
     if (!$sent) {
-        $restore = $conn->prepare("UPDATE customers SET password_hash = ? WHERE id = ? AND role <> 'admin'");
+        $restore = $conn->prepare("UPDATE customers SET password_hash = ?, must_change_password = 0 WHERE id = ? AND role <> 'admin'");
         if ($restore) {
             $restore->bind_param('si', $oldHash, $customerId);
             $restore->execute();
@@ -280,7 +301,7 @@ function customerResetPassword(mysqli $conn, string $identifier): array
 
     return [
         'ok' => true,
-        'message' => 'Đã gửi mật khẩu mới tới ' . customerMaskEmail($email) . '. Hãy kiểm tra hộp thư, kể cả mục Spam.',
+        'message' => 'Đã gửi mật khẩu tạm thời tới ' . customerMaskEmail($email) . '. Hãy đăng nhập rồi đặt mật khẩu mới. Kiểm tra cả mục Spam.',
         'password' => '',
     ];
 }
@@ -389,7 +410,8 @@ function customerLogin(mysqli $conn, string $identifier, string $password): arra
         return ['ok' => false, 'message' => customerLoginRateLimitMessage()];
     }
 
-    $stmt = $conn->prepare("SELECT id, password_hash, status, role, full_name FROM customers
+    customerEnsureMustChangePasswordColumn($conn);
+    $stmt = $conn->prepare("SELECT id, password_hash, status, role, full_name, must_change_password FROM customers
                             WHERE phone = ? OR email = ?
                             LIMIT 1");
     if (!$stmt) {
@@ -421,11 +443,19 @@ function customerLogin(mysqli $conn, string $identifier, string $password): arra
     $customer = customerGetById($conn, (int) $row['id']);
     adminSyncSessionForCustomer($customer);
 
+    $mustChangePassword = (int) ($row['must_change_password'] ?? 0) === 1;
     if (customerIsAdminRole($customer)) {
-        return ['ok' => true, 'message' => 'Đăng nhập quản trị thành công.', 'is_admin' => true];
+        return ['ok' => true, 'message' => 'Đăng nhập quản trị thành công.', 'is_admin' => true, 'must_change_password' => false];
     }
 
-    return ['ok' => true, 'message' => 'Đăng nhập thành công.', 'is_admin' => false];
+    return [
+        'ok' => true,
+        'message' => $mustChangePassword
+            ? 'Mật khẩu tạm thời chỉ dùng để đăng nhập. Hãy đặt mật khẩu mới.'
+            : 'Đăng nhập thành công.',
+        'is_admin' => false,
+        'must_change_password' => $mustChangePassword,
+    ];
 }
 
 function customerLogout(): void
@@ -471,6 +501,24 @@ function customerUpdateProfile(
     }
     $storedEmail = trim((string) ($current['email'] ?? ''));
     $missingEmail = $storedEmail === '' || filter_var($storedEmail, FILTER_VALIDATE_EMAIL) === false;
+    $mustChangePassword = customerMustChangePassword($current);
+    if ($mustChangePassword && $newPassword === '') {
+        return ['ok' => false, 'message' => 'Hãy đặt mật khẩu mới. Mật khẩu tạm thời chỉ dùng để đăng nhập.'];
+    }
+    if ($mustChangePassword && $newPassword !== '') {
+        $hashRow = $conn->prepare('SELECT password_hash FROM customers WHERE id = ? LIMIT 1');
+        $currentHash = '';
+        if ($hashRow) {
+            $hashRow->bind_param('i', $customerId);
+            $hashRow->execute();
+            $hashData = $hashRow->get_result()->fetch_assoc();
+            $hashRow->close();
+            $currentHash = (string) ($hashData['password_hash'] ?? '');
+        }
+        if ($currentHash !== '' && password_verify($newPassword, $currentHash)) {
+            return ['ok' => false, 'message' => 'Mật khẩu mới phải khác mật khẩu tạm thời vừa nhận qua email.'];
+        }
+    }
     if ($missingEmail && ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false)) {
         return ['ok' => false, 'message' => 'Tài khoản chưa có email. Vui lòng nhập email trong thông tin cá nhân để nhận mật khẩu khi quên.'];
     }
@@ -509,7 +557,7 @@ function customerUpdateProfile(
     if ($newPassword !== '') {
         $hash = password_hash($newPassword, PASSWORD_DEFAULT);
         $stmt = $conn->prepare(
-            'UPDATE customers SET full_name = ?, phone = ?, email = ?, password_hash = ? WHERE id = ? AND status = ?'
+            'UPDATE customers SET full_name = ?, phone = ?, email = ?, password_hash = ?, must_change_password = 0 WHERE id = ? AND status = ?'
         );
         if (!$stmt) {
             return ['ok' => false, 'message' => 'Không thể cập nhật tài khoản.'];
