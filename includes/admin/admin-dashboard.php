@@ -32,14 +32,6 @@ $customerOrders = $customerOrderSearch !== ''
 
     <?php include __DIR__ . '/../admin-nav.php'; ?>
 
-    <?php
-    require_once __DIR__ . '/../helpers.php';
-    require_once __DIR__ . '/../csrf.php';
-    $bank = shopBankAccount();
-    $paymentAccountReturnView = 'admin-dashboard';
-    include __DIR__ . '/partials/payment-account-form.php';
-    ?>
-
     <?php if (!empty($adminTasksPayload)): ?>
         <?php include __DIR__ . '/partials/task-panel.php'; ?>
     <?php endif; ?>

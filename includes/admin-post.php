@@ -92,10 +92,7 @@ function adminHandlePaymentAccountPost(mysqli $conn): void
         (string) ($_POST['account_number'] ?? ''),
         (string) ($_POST['account_name'] ?? '')
     );
-    $returnView = (string) ($_POST['return_view'] ?? 'admin-payment-account');
-    if (!in_array($returnView, ['admin-dashboard', 'admin-payment-account'], true)) {
-        $returnView = 'admin-payment-account';
-    }
+    $returnView = 'admin-payment-account';
     redirect(app_url($returnView, [
         'msg' => $result['message'],
         'msg_ok' => $result['ok'] ? '1' : '0',
