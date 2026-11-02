@@ -81,7 +81,7 @@ $authFlash = customerAuthConsumeFlash();
 $authMessage = $authFlash['message'];
 $authSuccess = $authFlash['success'];
 $authOpenModal = $authFlash['open'];
-if ($authOpenModal === null && isset($_GET['auth']) && in_array($_GET['auth'], ['login', 'register'], true)) {
+if ($authOpenModal === null && isset($_GET['auth']) && in_array($_GET['auth'], ['login', 'register', 'forgot'], true)) {
     $authOpenModal = (string) $_GET['auth'];
 }
 $authPrefill = $authFlash['prefill'];

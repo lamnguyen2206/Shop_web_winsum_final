@@ -43,14 +43,21 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function showAuthPanel(which) {
-        which = which === 'register' ? 'register' : 'login';
+        if (which !== 'register' && which !== 'forgot') {
+            which = 'login';
+        }
         document.querySelectorAll('[data-auth-panel]').forEach(function (p) {
             var id = p.getAttribute('data-auth-panel');
             p.hidden = id !== which;
         });
+        var titles = {
+            register: 'auth-register-title',
+            forgot: 'auth-forgot-title',
+            login: 'auth-login-title',
+        };
         var dlg = document.querySelector('.auth-modal-content');
         if (dlg) {
-            dlg.setAttribute('aria-labelledby', which === 'register' ? 'auth-register-title' : 'auth-login-title');
+            dlg.setAttribute('aria-labelledby', titles[which]);
         }
     }
 
@@ -62,8 +69,12 @@ document.addEventListener('DOMContentLoaded', function () {
         setModalOpen(true);
         closeNavDropdown();
         window.setTimeout(function () {
-            var focusSel =
-                which === 'register' ? 'input[name="phone"]' : '#auth-login-identifier';
+            var focusSel = '#auth-login-identifier';
+            if (which === 'register') {
+                focusSel = 'input[name="phone"]';
+            } else if (which === 'forgot') {
+                focusSel = '#auth-forgot-identifier';
+            }
             var el = scrim.querySelector(focusSel);
             if (el) {
                 el.focus();
@@ -83,7 +94,8 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
         document.querySelectorAll('[data-auth-switch]').forEach(function (btn) {
-            btn.addEventListener('click', function () {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
                 showAuthPanel(btn.getAttribute('data-auth-switch'));
             });
         });

@@ -83,3 +83,41 @@
         }, 120);
     });
 })();
+
+(function () {
+    'use strict';
+
+    var box = document.querySelector('[data-payment-wait]');
+    if (!box) {
+        return;
+    }
+
+    var code = box.getAttribute('data-order-code') || '';
+    var apiUrl = box.getAttribute('data-status-api') || 'api/order-payment-status.php';
+    var statusEl = box.querySelector('[data-payment-wait-status]');
+    if (!code) {
+        return;
+    }
+
+    function checkPaid() {
+        fetch(apiUrl + '?code=' + encodeURIComponent(code), { headers: { Accept: 'application/json' } })
+            .then(function (res) {
+                return res.json();
+            })
+            .then(function (data) {
+                if (!data || !data.ok) {
+                    return;
+                }
+                if (data.paid && data.redirect) {
+                    if (statusEl) {
+                        statusEl.textContent = 'Đã nhận tiền. Đang chuyển sang trang đặt hàng thành công…';
+                    }
+                    window.location.href = data.redirect;
+                }
+            })
+            .catch(function () {});
+    }
+
+    window.setInterval(checkPaid, 4000);
+    checkPaid();
+})();

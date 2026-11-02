@@ -16,8 +16,16 @@ $testDb = 'winsumwebfinal_test';
 putenv('WINSUM_DB_NAME=' . $testDb);
 
 $config = require $root . '/config/local.example.php';
-if (is_file($root . '/config/local.php')) {
-    $config = require $root . '/config/local.php';
+if (is_file($root . '/config/local.dev.php')) {
+    $config = require $root . '/config/local.dev.php';
+} elseif (is_file($root . '/config/local.php')) {
+    $localConfig = require $root . '/config/local.php';
+    $localUser = (string) ($localConfig['db']['user'] ?? '');
+    $localName = (string) ($localConfig['db']['name'] ?? '');
+    $isHosting = preg_match('/^u\d+_/', $localUser) === 1 || preg_match('/^u\d+_/', $localName) === 1;
+    if (is_array($localConfig) && !$isHosting) {
+        $config = $localConfig;
+    }
 }
 $db = $config['db'];
 $server = new mysqli((string) $db['host'], (string) $db['user'], (string) $db['pass']);
@@ -53,6 +61,7 @@ require_once $root . '/includes/coupon-repository.php';
 require_once $root . '/includes/customer-auth.php';
 require_once $root . '/includes/admin-auth.php';
 require_once $root . '/includes/cart-store.php';
+require_once $root . '/includes/payment-webhook.php';
 
 $failures = 0;
 
@@ -156,10 +165,119 @@ function testAdminCannotAddToCart(): void
     check($blocked, 'admin cannot add to cart');
 }
 
+function testBankWebhookMarksPaid(mysqli $conn): void
+{
+    $product = $conn->query('SELECT p.id, p.base_price
+                             FROM products p
+                             INNER JOIN inventory_items ii ON ii.product_id = p.id
+                             WHERE p.is_active = 1 AND ii.quantity_on_hand > 0
+                             ORDER BY p.id ASC LIMIT 1')->fetch_assoc();
+    $shipping = $conn->query('SELECT id, fee FROM shipping_methods WHERE is_active = 1 ORDER BY id ASC LIMIT 1')->fetch_assoc();
+    $payment = $conn->query("SELECT id FROM payment_methods WHERE code IN ('bank_transfer','vietqr') AND is_active = 1 ORDER BY id ASC LIMIT 1")->fetch_assoc();
+    if (!$product || !$shipping || !$payment) {
+        check(false, 'bank webhook fixtures');
+        return;
+    }
+    $price = (int) round((float) $product['base_price']);
+    $total = $price + (int) $shipping['fee'];
+    $code = orderCreateFromCheckout(
+        $conn,
+        [
+            'name' => 'Webhook Buyer',
+            'phone' => '0900000008',
+            'email' => 'webhook@example.com',
+            'address' => 'Ha Noi',
+            'note' => '',
+        ],
+        [[
+            'product_id' => (int) $product['id'],
+            'sku' => 'TEST',
+            'name' => 'Test lamp',
+            'image' => 'assets/images/blog_1.png',
+            'price' => $price,
+            'qty' => 1,
+        ]],
+        ['subtotal' => $price, 'shipping' => (int) $shipping['fee'], 'discount' => 0, 'total' => $total],
+        null,
+        null,
+        (int) $shipping['id'],
+        (int) $payment['id'],
+        null
+    );
+
+    $disabled = paymentWebhookApply($conn, [
+        'id' => 'evt-disabled',
+        'transferType' => 'in',
+        'transferAmount' => $total,
+        'content' => 'Thanh toan ' . $code,
+    ], 'secret', '');
+    check($disabled['status'] === 'disabled', 'webhook disabled without token');
+
+    $unauthorized = paymentWebhookApply($conn, [
+        'id' => 'evt-unauth',
+        'transferType' => 'in',
+        'transferAmount' => $total,
+        'content' => 'Thanh toan ' . $code,
+    ], 'sai-token', 'secret-token');
+    check($unauthorized['http'] === 401, 'webhook rejects bad token');
+
+    $wrongAmount = paymentWebhookApply($conn, [
+        'id' => 'evt-wrong-amount',
+        'transferType' => 'in',
+        'transferAmount' => $total + 1,
+        'content' => 'Thanh toan ' . $code,
+    ], 'secret-token', 'secret-token');
+    check($wrongAmount['status'] === 'unmatched', 'webhook rejects wrong amount');
+
+    $eventId = 'evt-paid-' . bin2hex(random_bytes(4));
+    $paid = paymentWebhookApply($conn, [
+        'id' => $eventId,
+        'transferType' => 'in',
+        'transferAmount' => $total,
+        'content' => 'CK ' . $code . ' Winsum',
+    ], 'secret-token', 'secret-token');
+    $row = $conn->query("SELECT payment_status FROM orders WHERE order_code = '" . $conn->real_escape_string($code) . "'")->fetch_assoc();
+    check($paid['ok'] && $paid['status'] === 'paid' && ($row['payment_status'] ?? '') === 'paid', 'webhook marks matching transfer paid');
+
+    $duplicate = paymentWebhookApply($conn, [
+        'id' => $eventId,
+        'transferType' => 'in',
+        'transferAmount' => $total,
+        'content' => 'CK ' . $code . ' Winsum',
+    ], 'secret-token', 'secret-token');
+    check($duplicate['status'] === 'duplicate', 'webhook is idempotent');
+}
+
+function testCustomerPasswordReset(mysqli $conn): void
+{
+    $phone = '0900000777';
+    $conn->query("DELETE FROM customers WHERE phone = '" . $conn->real_escape_string($phone) . "'");
+    $created = customerRegister($conn, 'Reset Buyer', $phone, 'reset-buyer@example.com', 'cu-mat-khau');
+    check($created['ok'] === true, 'reset fixture account is created');
+
+    $missing = customerResetPassword($conn, '0900000888');
+    check($missing['ok'] === false && $missing['password'] === '', 'unknown account is not reset');
+
+    $admin = $conn->query("SELECT phone FROM customers WHERE role = 'admin' LIMIT 1")->fetch_assoc();
+    $adminPhone = (string) ($admin['phone'] ?? '');
+    $adminBefore = $conn->query("SELECT password_hash FROM customers WHERE phone = '" . $conn->real_escape_string($adminPhone) . "'")->fetch_assoc();
+    $adminReset = customerResetPassword($conn, $adminPhone);
+    $adminAfter = $conn->query("SELECT password_hash FROM customers WHERE phone = '" . $conn->real_escape_string($adminPhone) . "'")->fetch_assoc();
+    check($adminReset['ok'] === false && ($adminBefore['password_hash'] ?? '') === ($adminAfter['password_hash'] ?? ''), 'admin password is not reset from the public form');
+
+    $reset = customerResetPassword($conn, $phone);
+    $row = $conn->query("SELECT password_hash FROM customers WHERE phone = '" . $conn->real_escape_string($phone) . "'")->fetch_assoc();
+    $login = customerLogin($conn, $phone, $reset['password']);
+    check($reset['ok'] === true && password_verify($reset['password'], (string) ($row['password_hash'] ?? '')) && $login['ok'] === true, 'customer can log in with the new password');
+    customerLogout();
+}
+
+testCustomerPasswordReset($conn);
 testOrderFlow($conn);
 testCouponExhausted($conn);
 testOrderOwnership($conn);
 testAdminCannotAddToCart();
+testBankWebhookMarksPaid($conn);
 
 if ($failures > 0) {
     fwrite(STDERR, "{$failures} test(s) failed\n");

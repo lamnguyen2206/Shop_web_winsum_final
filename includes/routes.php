@@ -20,6 +20,7 @@ function appRoutes(): array
         'blog-editor' => 'includes/blog-editor.php',
         'cart' => 'includes/cart.php',
         'checkout' => 'includes/checkout.php',
+        'order-paid' => 'includes/order-paid.php',
         'account' => 'includes/account.php',
         'orders' => 'includes/my-orders.php',
         'order-lookup' => 'includes/order-lookup.php',
@@ -50,6 +51,7 @@ function appRoutes(): array
         'blog-editor' => 'Soạn bài blog | Winsum Home',
         'cart' => 'Giỏ hàng | Winsum Home',
         'checkout' => 'Thanh toán | Winsum Home',
+        'order-paid' => 'Đặt hàng thành công | Winsum Home',
         'account' => 'Tài khoản | Winsum Home',
         'orders' => 'Đơn hàng của tôi | Winsum Home',
         'order-lookup' => 'Tra cứu đơn hàng | Winsum Home',
@@ -107,8 +109,14 @@ function appResolveView(string $requested): array
  */
 function appAssetsForView(string $view, bool $storefrontGuest): array
 {
+    $authJs = __DIR__ . '/../assets/js/auth-forms.js';
+    $authCss = __DIR__ . '/../assets/css/auth-forms.css';
     $styles = ['assets/css/site-search.css', 'assets/css/auth-toast.css'];
-    $scripts = ['assets/js/auth-forms.js', 'assets/js/site-search.js', 'assets/js/auth-toast.js'];
+    $scripts = [
+        'assets/js/auth-forms.js?v=' . (int) @filemtime($authJs),
+        'assets/js/site-search.js',
+        'assets/js/auth-toast.js',
+    ];
 
     if ($view === 'product') {
         $styles[] = 'assets/css/product-detail.css';
@@ -125,7 +133,7 @@ function appAssetsForView(string $view, bool $storefrontGuest): array
         $scripts[] = 'assets/js/home.js';
     }
     if ($storefrontGuest) {
-        $styles[] = 'assets/css/auth-forms.css';
+        $styles[] = 'assets/css/auth-forms.css?v=' . (int) @filemtime($authCss);
     }
     if (str_starts_with($view, 'admin') || $view === 'blog-editor') {
         $styles[] = 'assets/css/admin.css';

@@ -1,5 +1,43 @@
 <?php
 
+function appIsLocalHost(): bool
+{
+    if (PHP_SAPI === 'cli') {
+        return false;
+    }
+    $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    $host = preg_replace('/:\d+$/', '', $host) ?? $host;
+
+    return in_array($host, ['localhost', '127.0.0.1', '::1'], true);
+}
+
+/**
+ * Tài khoản Hostinger có dạng u123456789_winsum. File đó không dùng cho XAMPP.
+ *
+ * @param array<string, mixed> $config
+ */
+function appConfigIsHosting(array $config): bool
+{
+    $db = is_array($config['db'] ?? null) ? $config['db'] : [];
+    $user = (string) ($db['user'] ?? '');
+    $name = (string) ($db['name'] ?? '');
+
+    return preg_match('/^u\d+_/', $user) === 1 || preg_match('/^u\d+_/', $name) === 1;
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function appReadConfigFile(string $path): ?array
+{
+    if (!is_file($path)) {
+        return null;
+    }
+    $loaded = require $path;
+
+    return is_array($loaded) ? $loaded : null;
+}
+
 /**
  * @return array<string, mixed>
  */
@@ -10,11 +48,21 @@ function appConfig(): array
         return $config;
     }
 
-    $local = __DIR__ . '/local.php';
-    $example = __DIR__ . '/local.example.php';
-    $loaded = is_file($local) ? require $local : require $example;
-    if (!is_array($loaded)) {
-        $loaded = [];
+    $dir = __DIR__;
+    $example = appReadConfigFile($dir . '/local.example.php') ?? [];
+    $local = appReadConfigFile($dir . '/local.php');
+    $dev = appReadConfigFile($dir . '/local.dev.php');
+
+    if (appIsLocalHost()) {
+        if ($dev !== null) {
+            $loaded = $dev;
+        } elseif ($local !== null && !appConfigIsHosting($local)) {
+            $loaded = $local;
+        } else {
+            $loaded = $example;
+        }
+    } else {
+        $loaded = $local ?? $example;
     }
     $config = $loaded;
 
