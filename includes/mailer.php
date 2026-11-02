@@ -46,6 +46,18 @@ function mailSend(string $to, string $subject, string $body): bool
     return @mail($to, $subject, $body, $headers);
 }
 
+function mailSendPasswordReset(string $to, string $name, string $password): bool
+{
+    $name = trim($name) !== '' ? trim($name) : 'bạn';
+    $body = "Xin chào {$name},\n\n"
+        . "Winsum Home đã đặt lại mật khẩu cho tài khoản của bạn.\n"
+        . "Mật khẩu mới: {$password}\n\n"
+        . "Hãy đăng nhập rồi đổi mật khẩu trong mục Tài khoản.\n"
+        . "Nếu bạn không yêu cầu đặt lại mật khẩu, hãy liên hệ cửa hàng.\n";
+
+    return mailSend($to, 'Mat khau moi Winsum Home', $body);
+}
+
 function mailSendOrderConfirmation(mysqli $conn, string $orderCode): void
 {
     require_once __DIR__ . '/order-repository.php';

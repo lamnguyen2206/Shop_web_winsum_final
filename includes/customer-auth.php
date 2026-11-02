@@ -196,9 +196,20 @@ function customerGenerateTemporaryPassword(): string
     return $password;
 }
 
+function customerMaskEmail(string $email): string
+{
+    $parts = explode('@', $email, 2);
+    if (count($parts) !== 2 || $parts[0] === '' || $parts[1] === '') {
+        return $email;
+    }
+    $visible = mb_substr($parts[0], 0, 1);
+
+    return $visible . '***@' . $parts[1];
+}
+
 /**
- * Đặt mật khẩu mới cho khách và trả mật khẩu dạng đọc được để hiện một lần trên trang.
- * Không đổi tài khoản quản trị.
+ * Đặt mật khẩu mới cho khách và gửi mật khẩu đó tới email đã lưu.
+ * Không đổi tài khoản quản trị. Không hiện mật khẩu trên trang.
  *
  * @return array{ok:bool,message:string,password:string}
  */
@@ -212,7 +223,7 @@ function customerResetPassword(mysqli $conn, string $identifier): array
         return ['ok' => false, 'message' => customerLoginRateLimitMessage(), 'password' => ''];
     }
 
-    $stmt = $conn->prepare('SELECT id, role, status FROM customers WHERE phone = ? OR email = ? LIMIT 1');
+    $stmt = $conn->prepare('SELECT id, full_name, email, password_hash, role, status FROM customers WHERE phone = ? OR email = ? LIMIT 1');
     if (!$stmt) {
         return ['ok' => false, 'message' => 'Không thể đặt lại mật khẩu lúc này.', 'password' => ''];
     }
@@ -232,26 +243,45 @@ function customerResetPassword(mysqli $conn, string $identifier): array
         return ['ok' => false, 'message' => 'Tài khoản hiện không khả dụng.', 'password' => ''];
     }
 
+    $email = trim((string) ($row['email'] ?? ''));
+    if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+        return ['ok' => false, 'message' => 'Tài khoản này chưa có email. Không thể gửi mật khẩu mới.', 'password' => ''];
+    }
+
     $plain = customerGenerateTemporaryPassword();
     $hash = password_hash($plain, PASSWORD_DEFAULT);
+    $oldHash = (string) $row['password_hash'];
     $customerId = (int) $row['id'];
     $update = $conn->prepare("UPDATE customers SET password_hash = ? WHERE id = ? AND role <> 'admin'");
     if (!$update) {
         return ['ok' => false, 'message' => 'Không thể đặt lại mật khẩu lúc này.', 'password' => ''];
     }
     $update->bind_param('si', $hash, $customerId);
-    $ok = $update->execute() && $update->affected_rows === 1;
+    $saved = $update->execute() && $update->affected_rows === 1;
     $update->close();
-    if (!$ok) {
+    if (!$saved) {
         return ['ok' => false, 'message' => 'Không thể lưu mật khẩu mới.', 'password' => ''];
+    }
+
+    require_once __DIR__ . '/mailer.php';
+    $sent = mailSendPasswordReset($email, (string) ($row['full_name'] ?? ''), $plain);
+    if (!$sent) {
+        $restore = $conn->prepare("UPDATE customers SET password_hash = ? WHERE id = ? AND role <> 'admin'");
+        if ($restore) {
+            $restore->bind_param('si', $oldHash, $customerId);
+            $restore->execute();
+            $restore->close();
+        }
+
+        return ['ok' => false, 'message' => 'Không gửi được email. Mật khẩu cũ vẫn giữ nguyên.', 'password' => ''];
     }
 
     customerLoginRecordFailure($conn, $identifier);
 
     return [
         'ok' => true,
-        'message' => 'Đã đặt mật khẩu mới. Hãy chép mật khẩu bên dưới rồi đăng nhập.',
-        'password' => $plain,
+        'message' => 'Đã gửi mật khẩu mới tới ' . customerMaskEmail($email) . '. Hãy kiểm tra hộp thư, kể cả mục Spam.',
+        'password' => '',
     ];
 }
 

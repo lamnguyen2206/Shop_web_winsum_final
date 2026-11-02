@@ -265,10 +265,39 @@ function testCustomerPasswordReset(mysqli $conn): void
     $adminAfter = $conn->query("SELECT password_hash FROM customers WHERE phone = '" . $conn->real_escape_string($adminPhone) . "'")->fetch_assoc();
     check($adminReset['ok'] === false && ($adminBefore['password_hash'] ?? '') === ($adminAfter['password_hash'] ?? ''), 'admin password is not reset from the public form');
 
+    $noMailPhone = '0900000778';
+    $conn->query("DELETE FROM customers WHERE phone = '" . $conn->real_escape_string($noMailPhone) . "'");
+    $noMailCreated = customerRegister($conn, 'No Mail Buyer', $noMailPhone, '', 'cu-mat-khau');
+    $noMailBefore = $conn->query("SELECT password_hash FROM customers WHERE phone = '" . $conn->real_escape_string($noMailPhone) . "'")->fetch_assoc();
+    $noMailReset = customerResetPassword($conn, $noMailPhone);
+    $noMailAfter = $conn->query("SELECT password_hash FROM customers WHERE phone = '" . $conn->real_escape_string($noMailPhone) . "'")->fetch_assoc();
+    check($noMailCreated['ok'] === true && $noMailReset['ok'] === false && ($noMailBefore['password_hash'] ?? '') === ($noMailAfter['password_hash'] ?? ''), 'account without email is not reset');
+    customerLogout();
+
     $reset = customerResetPassword($conn, $phone);
     $row = $conn->query("SELECT password_hash FROM customers WHERE phone = '" . $conn->real_escape_string($phone) . "'")->fetch_assoc();
-    $login = customerLogin($conn, $phone, $reset['password']);
-    check($reset['ok'] === true && password_verify($reset['password'], (string) ($row['password_hash'] ?? '')) && $login['ok'] === true, 'customer can log in with the new password');
+    $mailedPassword = '';
+    $mailFiles = glob(dirname(__DIR__) . '/storage/mail/*.txt') ?: [];
+    usort($mailFiles, static fn (string $a, string $b): int => filemtime($b) <=> filemtime($a));
+    foreach ($mailFiles as $mailFile) {
+        $contents = (string) file_get_contents($mailFile);
+        if (!str_contains($contents, 'reset-buyer@example.com')) {
+            continue;
+        }
+        if (preg_match('/Mật khẩu mới: (\S+)/u', $contents, $matches) === 1) {
+            $mailedPassword = $matches[1];
+        }
+        break;
+    }
+    $login = $mailedPassword !== '' ? customerLogin($conn, $phone, $mailedPassword) : ['ok' => false];
+    check(
+        $reset['ok'] === true
+        && $reset['password'] === ''
+        && $mailedPassword !== ''
+        && password_verify($mailedPassword, (string) ($row['password_hash'] ?? ''))
+        && $login['ok'] === true,
+        'customer can log in with the password sent by email'
+    );
     customerLogout();
 }
 

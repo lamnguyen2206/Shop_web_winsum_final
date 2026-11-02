@@ -116,7 +116,6 @@ function customerAuthHandlePost(mysqli $conn): void
             'open' => 'forgot',
             'prefill' => [
                 'identifier' => $identifier,
-                'new_password' => $result['password'],
             ],
         ];
         customerAuthRedirectAfterPost();
