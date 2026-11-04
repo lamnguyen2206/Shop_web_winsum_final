@@ -490,30 +490,34 @@
 .orders-table {
     border: 1px solid #e5e7eb;
     border-radius: 4px;
-    overflow: hidden;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .orders-head,
 .orders-row {
     display: grid;
+    min-width: 980px;
     grid-template-columns:
-        minmax(0, 1.35fr)
-        minmax(0, 0.85fr)
-        minmax(0, 0.85fr)
-        minmax(0, 0.85fr)
-        minmax(0, 0.75fr)
-        minmax(0, 0.95fr)
-        minmax(0, 0.9fr);
+        minmax(120px, 1.35fr)
+        minmax(120px, 0.9fr)
+        minmax(140px, 1fr)
+        minmax(120px, 0.9fr)
+        minmax(110px, 0.8fr)
+        minmax(150px, 1fr)
+        minmax(120px, 0.85fr);
     gap: 10px 12px;
     padding: 14px;
-    align-items: start;
+    align-items: center;
 }
 
 .orders-head > span,
 .orders-row > span {
     min-width: 0;
-    overflow-wrap: anywhere;
-    word-break: break-word;
+    overflow-wrap: normal;
+    word-break: normal;
 }
 
 .orders-head > span:first-child,
@@ -523,8 +527,11 @@
 }
 
 .orders-row .order-link {
-    height: 34px;
+    height: auto;
+    min-height: 34px;
+    padding: 6px 12px;
     font-size: 13px;
+    white-space: nowrap;
 }
 
 .order-detail-grid {
@@ -556,13 +563,14 @@
 
 .order-items-table .orders-head,
 .order-items-table .orders-row {
+    min-width: 760px;
     grid-template-columns:
-        minmax(0, 1.4fr)
-        minmax(0, 0.75fr)
-        minmax(0, 0.75fr)
-        minmax(0, 0.6fr)
-        minmax(0, 0.8fr)
-        minmax(0, 0.7fr);
+        minmax(160px, 1.4fr)
+        minmax(110px, 0.8fr)
+        minmax(110px, 0.75fr)
+        minmax(72px, 0.5fr)
+        minmax(120px, 0.8fr)
+        minmax(84px, 0.6fr);
 }
 
 .order-detail-actions {
@@ -658,11 +666,6 @@
 
     .order-detail-grid {
         grid-template-columns: 1fr;
-    }
-
-    .orders-head,
-    .orders-row {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 

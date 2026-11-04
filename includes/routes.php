@@ -138,7 +138,8 @@ function appAssetsForView(string $view, bool $storefrontGuest): array
         $styles[] = 'assets/css/auth-forms.css?v=' . (int) @filemtime($authCss);
     }
     if (str_starts_with($view, 'admin') || $view === 'blog-editor') {
-        $styles[] = 'assets/css/admin.css';
+        $adminCss = __DIR__ . '/../assets/css/admin.css';
+        $styles[] = 'assets/css/admin.css?v=' . (int) @filemtime($adminCss);
         $tasksJs = __DIR__ . '/../assets/js/admin-tasks.js';
         $scripts[] = 'assets/js/admin-tasks.js?v=' . (int) @filemtime($tasksJs);
     }
