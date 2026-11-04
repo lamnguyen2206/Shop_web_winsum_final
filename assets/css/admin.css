@@ -287,13 +287,16 @@
 .admin-table-wrap {
     width: 100%;
     max-width: 100%;
+    min-width: 0;
     box-sizing: border-box;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .admin-table {
-    width: 100%;
-    max-width: 100%;
+    width: max-content;
+    min-width: 100%;
+    max-width: none;
     border-collapse: collapse;
     font-size: 14px;
     table-layout: auto;
@@ -328,9 +331,10 @@
 
 .admin-actions-cell {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 8px;
     align-items: center;
+    white-space: nowrap;
 }
 
 .review-admin-card .admin-actions-cell .btn-secondary {
@@ -1175,7 +1179,10 @@
 .admin-order-detail-page .admin-order-items-table {
     border-radius: var(--radius-md, 12px);
     border-color: #e5e7eb;
-    overflow: hidden;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     margin-bottom: 20px;
 }
 
@@ -1190,13 +1197,14 @@
 
 .admin-order-detail-page .admin-order-items-table .orders-head,
 .admin-order-detail-page .admin-order-items-table .orders-row {
+    min-width: 760px;
     grid-template-columns:
-        minmax(0, 1.35fr)
-        minmax(0, 0.85fr)
-        minmax(0, 0.85fr)
-        minmax(0, 0.6fr)
-        minmax(0, 0.85fr)
-        minmax(0, 0.9fr);
+        minmax(160px, 1.4fr)
+        minmax(110px, 0.8fr)
+        minmax(110px, 0.75fr)
+        minmax(72px, 0.5fr)
+        minmax(120px, 0.8fr)
+        minmax(84px, 0.6fr);
 }
 
 .admin-order-detail-page .order-item-img {
